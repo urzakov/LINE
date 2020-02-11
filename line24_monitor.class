@@ -1,0 +1,433 @@
+<?php
+/*	===!!! template for debug !!!===
+
+	echo '<pre>';
+		var_dump($result3);
+	echo '</pre>';
+
+	===!!! template for debug !!!===	*/
+
+	include('line24_project.class');
+
+	class line24_monitor extends line24_project
+	{
+		public $current_year;									//	текущий год
+		public $current_month;									//	текущий месяц
+		public $current_day;									//	текущий день
+		public $cur_day_first_form;								//	дата в формате 06.01.2020
+		public $cur_day_second_form;							//	дата в формате 2020-01-06
+		public $cur_day_third_form;								//	дата в формате 06.01.20
+		public $array_csv = array();							//	поле содержит csv файл в виде массива
+		public $project_array = array();						//	поле содержит проекты которые прозваниваются сегодня
+		public $oper_array = array();							//	поле содержит операторов которые прозваниваются сегодня
+		public $array_missed = array();							//	поле содержит массив пропущенных звонков
+
+		/*
+			Метод получает текущую временную метку и заполняет поля $current_year, $current_month, $current_day, $cur_day_first_form
+		*/
+		public function get_current_date(){
+			$tmp_date = explode('-', date('Y-m-d', time()));
+			$tmp_date1 = explode('-', date('y-m-d', time()));
+			$this->current_year = $tmp_date[0];
+			$this->current_month = $tmp_date[1];
+			$this->current_day = $tmp_date[2];
+			$this->cur_day_first_form = $this->current_day.'.'.$this->current_month.'.'.$this->current_year;
+			$this->cur_day_second_form = $this->current_year.'-'.$this->current_month.'-'.$this->current_day;
+			$this->cur_day_third_form = $this->current_day.'.'.$this->current_month.'.'.$tmp_date1[0];
+		}
+
+		/*
+			Метод принимает $name и возвращает id
+		*/
+		public function get_id($name, $array){
+			foreach($array as $key => $value){
+				if($name == $value) return $key;
+			}
+			return 'Пропущенные';
+		}
+
+		/*
+			Метод парсит биллинги и заполняет поля $project_array и $oper_array
+		*/
+		public function get_billings($status){
+			$selected_day = $this->cur_day_first_form;
+
+			if($status == 0){	//	если отрисовываем нашу систему
+				//	POST ссылка на "Входящие" для авторизации
+				$url6 = "http://localhost/cc-line24/admin.php/calls/in";
+	//			$url7 = "http://localhost/cc-line24/admin.php/calls/in?date%5Bstart%5D=$selected_start_date+00%3A00&date%5Bend%5D=$selected_end_date+23%3A59&directid%5B0%5D=&queue%5B0%5D=&agent%5B0%5D=$oper_id&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+				$url7 = "http://localhost/cc-line24/admin.php/calls/in?date%5Bstart%5D=$selected_day+00%3A00&date%5Bend%5D=$selected_day+23%3A59&directid%5B0%5D=&queue%5B0%5D=&agent%5B0%5D=&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=7118f382e4b8335049866e2c78091d1e&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+
+				$ch = curl_init ($url6);
+				$path1 = dirname(__FILE__). '/data/cookie.txt';
+				curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+				curl_setopt($ch, CURLOPT_URL,$url6);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+				curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=admin&password=OGMzMTQ2OD");
+				curl_exec($ch);
+
+				curl_setopt($ch, CURLOPT_URL,$url7);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+				$result3 = curl_exec($ch);
+			} else {	//	если отрисовываем систему Комусов
+				//	POST ссылка на "Входящие" для авторизации
+				$url6 = "https://outsource.ln24.ru/cc-line24/reports.php/calls/in";
+//				$url7 = "http://localhost/cc-line24/admin.php/calls/in?date%5Bstart%5D=$selected_start_date+00%3A00&date%5Bend%5D=$selected_end_date+23%3A59&directid%5B0%5D=&queue%5B0%5D=&agent%5B0%5D=$oper_id&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+//				$url7 = "https://outsource.ln24.ru/cc-line24/reports.php/calls/in?date%5Bstart%5D=$selected_start_date+00%3A00&date%5Bend%5D=$selected_end_date+23%3A59&queue%5B0%5D=&agent%5B0%5D=$tmp_oper&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=6c779fa3b86b6cea6fcfdfaa9e6d4215&paginator%5Bpage%5D=0+%D1%81%D1%82%D1%80.&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+				$url7 = "https://outsource.ln24.ru/cc-line24/reports.php/calls/in?date%5Bstart%5D=$selected_day+00%3A00&date%5Bend%5D=$selected_day+23%3A59&queue%5B0%5D=&agent%5B0%5D=&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+				$ch = curl_init ($url6);
+				$path1 = dirname(__FILE__). '/data/cookie.txt';
+				curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+				curl_setopt($ch, CURLOPT_URL,$url6);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+				curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=WT_super&password=EWn8dDtc");
+				curl_exec($ch);
+
+				curl_setopt($ch, CURLOPT_URL,$url7);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+				$result3 = curl_exec($ch);
+			
+//				$this->array_csv = array();
+			}
+/***********************************************************
+**********************************************************
+**********************************************************
+*/
+			$this->array_csv = $this->from_csv_to_array($result3);		//	переводим csv файл в массив
+
+/*			echo '<pre>';
+				var_dump($this->array_csv);
+			echo '</pre>';*/
+
+			/*
+				Структура csv файла
+				[0] =>	#
+				[1] =>	Дата
+				[2] =>	Время
+				[3] =>	Вх.Номер
+				[4] =>	Очередь
+				[5] =>	Оператор
+				[6] =>	Телефон
+				[7] =>	Ожидание
+				[8] =>	Разговор
+				[9] =>	Завершил
+				[10] =>	Обработка
+				[11] =>	Запись
+				[12] =>	Обр.вызов
+			*/
+
+			foreach($this->array_csv as $key => $value){
+				if($status != 0){	//	если обрабатываем систему Комусов
+					$index_prj = 3;		//	индекс проекта для системы Комусов
+					$index_oper = 4;	//	индекс оператора для системы Комусов
+					$index_talk = 7;	//	индекс времени в разговоре для системы Комусов
+					$index_handling = 9;//	индекс времени в обработке для системы Комусов
+				} else {	//	если наша система
+					$index_prj = 4;		//	индекс проекта для нашей системы
+					$index_oper = 5;	//	индекс оператора для нашей системы
+					$index_talk = 8;	//	индекс времени в разговоре для нашей системы
+					$index_handling = 10;	//	индекс времени в обработке для нашей системы
+				}
+				
+				if($key == 0) continue;					//	пропускаем шапку
+//	начинаем заполнять проекты
+				$tmp_project = trim($value[$index_prj], '"');	//	в названии проекта убираем кавычки по сторонам
+
+				$this->project_array[$tmp_project]['last_call'] = $value[2];	//	время последнего звонка
+				$this->project_array[$tmp_project]['last_duration_call'] = $this->from_str_to_sec($value[$index_talk]);	//	время разговора в сек.
+
+				if(!isset($this->project_array[$tmp_project]['count_call'])){	//	если это первое вхождение в название проекта присваиваем к-во звонков = 1
+					$this->project_array[$tmp_project]['count_call'] = 1;
+				} else {	//	если повторное вхождение в проект делаем инкримент
+					$this->project_array[$tmp_project]['count_call']++;
+				}
+
+				if($value[$index_oper] == 'Нет'){		//	если это пропущенный звонок
+					if(!isset($this->project_array[$tmp_project]['miss_call'])){	//	если это первое вхождение в название проекта присваиваем к-во звонков = 1
+						$this->project_array[$tmp_project]['miss_call'] = 1;
+					} else {	//	если повторное вхождение в проект делаем инкримент
+						$this->project_array[$tmp_project]['miss_call']++;
+					}
+				}
+
+				if(!isset($this->project_array[$tmp_project]['duration'])){	//	если это первое вхождение в название проекта присваиваем текущее время в разговоре
+					$this->project_array[$tmp_project]['duration'] = $value[$index_talk];
+				} else {	//	если повторное вхождение в проект складываем время разговора
+					$this->project_array[$tmp_project]['duration'] = $this->from_sec_to_str($this->from_str_to_sec($this->project_array[$tmp_project]['duration']) + $this->from_str_to_sec($value[$index_talk]));
+				}
+				
+				$tmp_oper_name = trim($value[$index_oper], '"');	//	в названии оператора убираем кавычки по сторонам
+				$tmp_oper_id = $this->get_id($tmp_oper_name, $this->array_oper);	//	получаем id оператора
+				if(!isset($this->project_array[$tmp_project]['opers'][$tmp_oper_id]) AND $tmp_oper_name != 'Нет'){	//	если на проекте нет такого оператора (кроме пропущенных) то добавляем
+					$this->project_array[$tmp_project]['opers'][$tmp_oper_id] = $tmp_oper_name;
+				}
+//	закончили заполнять проекты
+
+//	начинаем заполнять операторов
+				$tmp_oper = trim($value[$index_oper], '"');	//	в названии оператора убираем кавычки по сторонам
+				if($tmp_oper == 'Нет') $tmp_oper = 'Пропущенные';	//	если это пропущенные звонки
+
+				$this->oper_array[$tmp_oper]['last_call'] = $value[2];	//	время последнего звонка
+				$this->oper_array[$tmp_oper]['last_duration_call'] = $this->from_str_to_sec($value[$index_talk]);	//	время разговора в сек.
+
+				if(!isset($this->oper_array[$tmp_oper]['count_call'])){	//	если это первое вхождение в название оператора присваиваем к-во звонков = 1
+					$this->oper_array[$tmp_oper]['count_call'] = 1;
+				} else {	//	если повторное вхождение в оператора делаем инкримент
+					$this->oper_array[$tmp_oper]['count_call']++;
+				}
+
+				if(!isset($this->oper_array[$tmp_oper]['duration'])){	//	если это первое вхождение в название оператора присваиваем текущее время в разговоре
+					$this->oper_array[$tmp_oper]['duration'] = $value[$index_talk];
+				} else {	//	если повторное вхождение в оператора складываем время разговора
+					$this->oper_array[$tmp_oper]['duration'] = $this->from_sec_to_str($this->from_str_to_sec($this->oper_array[$tmp_oper]['duration']) + $this->from_str_to_sec($value[$index_talk]));
+				}
+				
+				$tmp_project_name = trim($value[$index_prj], '"');	//	в названии проекта убираем кавычки по сторонам
+				$tmp_project_id = $this->get_id($tmp_project_name, $this->array_project);	//	получаем id проекта
+				if(!isset($this->oper_array[$tmp_oper]['projects'][$tmp_project_id])){	//	если нет проекта который звонил оператор то добавляем
+					$this->oper_array[$tmp_oper]['projects'][$tmp_project_id] = $tmp_project_name;
+				}
+				
+				if(!isset($this->oper_array[$tmp_oper]['handling'])){	//	если это первое вхождение в название оператора присваиваем текущее время обработки
+					$this->oper_array[$tmp_oper]['handling'] = $value[$index_handling];
+				} else {	//	если повторное вхождение в оператора записываем наибольшее время обработки
+					if($this->from_str_to_sec($this->oper_array[$tmp_oper]['handling']) < $this->from_str_to_sec($value[$index_handling])){	//	если время обработки больше чем предыдущее то записываем его
+						$this->oper_array[$tmp_oper]['handling'] = $value[$index_handling];
+					};
+				}
+//	закончили заполнять операторов				
+			}
+			
+/*			echo '<pre>';
+				var_dump($this->oper_array);
+			echo '</pre>';*/
+			ksort($this->project_array);
+			ksort($this->oper_array);
+		}
+		
+		/*
+			Метод принимает время в формате 1:02:03 и возвращает массив в формате
+			$array = (
+				'hour' => $hour,
+				'minute' => $minute,
+				'second' => $second,
+			);
+		*/
+		public function from_str_to_time_array($str){
+			$time = explode(':', $str);
+			$array['hour'] = $time[0];
+			$array['minute'] = $time[1];
+			$array['second'] = $time[2];
+			return $array;
+		}
+		
+		/*
+			Метод отрисовывает монитор
+		*/
+		public function show_monitor(){
+			
+/*			echo '<pre>';
+				var_dump($this->array_oper);
+			echo '</pre>';*/
+
+			echo "<p class = 'title'>Сегодня в системе Line24: <span style = 'color:red; font-size: 20pt;'>".$this->cur_day_first_form."</span></p>";
+
+/******************************/
+//	Выводим монитор по проектам
+/******************************/
+			$index_prj = 1;		//	количество записей для проектов
+			echo "<div id='monitor_project'>";
+				echo "<b><p style='text-align: center'>Мониторинг проектов</p></b>";
+			echo "<table class = 'project' border = 1>";
+				echo "<tr>";
+					echo "<td class = 'header_table' style = 'width:20px' rowspan = '2'>№<BR>п/п</td>";
+					echo "<td class = 'header_table' style = 'width:250px' rowspan = '2'>Название проекта</td>";
+					echo "<td class = 'header_table' style = 'width:50px' rowspan = '2'>Кол-во звонков</td>";
+					echo "<td class = 'header_table' style = 'width:60px' rowspan = '2'>Кол-во пропущ.</td>";
+					echo "<td class = 'header_table' style = 'width:100px' colspan = '2'>% соотнош.</td>";
+					echo "<td class = 'header_table' style = 'width:70px' rowspan = '2'>Время посл. звонка</td>";
+					echo "<td class = 'header_table' style = 'width:70px' rowspan = '2'>Время от посл. звонка</td>";
+				echo "</tr>";
+				echo "<tr>";
+					echo "<td class = 'header_table'>прин.</td>";
+					echo "<td class = 'header_table'>проп.</td>";
+				echo "</tr>";
+				foreach($this->project_array as $key => $value){
+					echo "<tr>";
+						$count_call = $value['count_call'];
+						if(isset($value['miss_call'])){
+							$miss_call = $value['miss_call'];
+						} else {
+							$miss_call = 0;
+						}
+						$last_call = $value['last_call'];
+						$last_duration_call = $value['last_duration_call'];
+						$tmp_array = $this->from_str_to_time_array($last_call);
+						$tmp_timestamp = mktime($tmp_array['hour'], $tmp_array['minute'], $tmp_array['second'], $this->current_month, $this->current_day, $this->current_year);
+						$downtime = time() - $tmp_timestamp - $last_duration_call;	//	время от последнего звонка
+						if($downtime > 3600){
+							$downtime = '> часа';
+						} elseif($downtime > 1800){
+							$downtime = '> 30 мин.';
+						} elseif($downtime > 600){
+							$downtime = '> 10 мин.';
+						} elseif($downtime > 300){
+							$downtime = '> 5 мин.';
+						} else {
+							$downtime = $downtime.' сек.';
+						}
+						$lost = round($miss_call / $count_call * 100, 2);
+						$accept = 100 - $lost;
+						
+						echo "<td>$index_prj</td>";
+						echo "<td>";
+							echo $key.' ';
+							$opers_list = '';
+							if(isset($value['opers'])){	//	если есть операторы на проекте
+								asort($value['opers']);
+								$index = 1;
+								foreach($value['opers'] as $key1 => $value1){
+									$opers_list .= $index.'.'.$value1.' ';
+									$index++;
+								}
+							} else {	//	если операторов нет
+								$opers_list = 'Операторов нет';
+							}
+
+							echo "<div class='tooltip' data-title='$opers_list'>
+									<img src='img/tooltip.png' width='20' height='20' alt='Операторы в разговоре'>
+								</div>";
+						echo "</td>";
+						echo "<td>$count_call</td>";
+						echo "<td>$miss_call</td>";
+						echo "<td>$accept%</td>";
+						echo "<td>$lost%</td>";
+						echo "<td>$last_call</td>";
+						echo "<td>$downtime</td>";
+					echo "</tr>";
+					$index_prj++;
+				}
+			echo "</table>";
+			
+/*********************************/
+//	Выводим монитор по пропущенным
+/*********************************/			
+//			echo "<div id = 'missed'>";
+//				$this->get_missed($this->cur_day_second_form);
+//			echo "</div>";
+			
+			echo "</div>";
+
+/********************************/
+//	Выводим монитор по операторам
+/********************************/			
+			$index_oper = 1;		//	количество записей для операторов
+			echo "<div id='monitor_oper'>";
+				echo "<b><p style='text-align: center'>Мониторинг операторов</p></b>";
+			echo "<table class = 'project' border = 1>";
+				echo "<tr>";
+					echo "<td class = 'header_table' style = 'width:20px'>№<BR>п/п</td>";
+					echo "<td class = 'header_table' style = 'width:250px'>ФИО оператора</td>";
+					echo "<td class = 'header_table' style = 'width:50px'>Кол-во звонков</td>";
+					echo "<td class = 'header_table' style = 'width:100px'>Время посл. звонка</td>";
+					echo "<td class = 'header_table' style = 'width:70px'>Время от посл. звонка</td>";
+					echo "<td class = 'header_table' style = 'width:70px'>Наиб. время в обраб.</td>";
+					echo "<td class = 'header_table' style = 'width:70px'>Кол-во мин. в час</td>";
+					
+				echo "</tr>";
+				foreach($this->oper_array as $key => $value){
+					if($key == 'Пропущенные'){	//	если это пропущенные звонки подсвечиваем строку
+							$tmp_bgc = 'orange';
+						} else {
+							$tmp_bgc = '';
+						}
+					echo "<tr style = 'background-color: $tmp_bgc;'>";
+						$count_call = $value['count_call'];
+						$last_call = $value['last_call'];
+						$last_duration_call = $value['last_duration_call'];
+						$tmp_array = $this->from_str_to_time_array($last_call);
+						$tmp_timestamp = mktime($tmp_array['hour'], $tmp_array['minute'], $tmp_array['second'], $this->current_month, $this->current_day, $this->current_year);
+						$downtime = time() - $tmp_timestamp - $last_duration_call;	//	время от последнего звонка
+						if($key == 'Пропущенные'){
+							$handling = 0;
+							$time_in_line = 0;
+							$ratio = 0;
+						} else {
+							$handling = $value['handling'];
+							$duration = $value['duration'];
+							$tmp_oper_id = $this->get_id($key, $this->array_oper);	//	получаем id оператора
+							$this->get_time_in_line($this->cur_day_second_form, $this->cur_day_second_form, $tmp_oper_id);
+							$time_in_line = $this->selected_time_in_line[$this->cur_day_third_form];
+							if($time_in_line){
+								$ratio = round($this->from_str_to_sec($duration) / $this->from_str_to_sec($time_in_line) * 60, 2);
+							} else {
+								$ratio = 0;
+							}
+						}
+						
+						if($ratio < 10){
+							$tmp_color = 'Chocolate';
+						} elseif($ratio < 30) {
+							$tmp_color = 'Aquamarine';
+						} elseif ($ratio < 60) {
+							$tmp_color = 'YellowGreen';
+						} elseif($ratio > 60) {
+							$tmp_color = 'Salmon';
+						} else {
+							$tmp_color = '';
+						}
+						
+						if($downtime > 3600){
+							$downtime = '> часа';
+						} elseif($downtime > 1800){
+							$downtime = '> 30 мин.';
+						} elseif($downtime > 600){
+							$downtime = '> 10 мин.';
+						} elseif($downtime > 300){
+							$downtime = '> 5 мин.';
+						} else {
+							$downtime = $downtime.' сек.';
+						}
+
+						echo "<td>$index_oper</td>";
+						echo "<td>";
+							echo $key.' ';
+							$projects_list = '';
+							if(isset($value['projects'])){	//	если оператор прозванивал разные проекты
+								asort($value['projects']);
+								$index2 = 1;
+								foreach($value['projects'] as $key1 => $value1){
+									$projects_list .= $index2.'.'.$value1.' ';
+									$index2++;
+								}
+							} else {	//	если проектов нет
+								$projects_list = 'Проектов нет';
+							}
+
+							echo "<div class='tooltip' data-title='$projects_list'>
+									<img src='img/tooltip.png' width='20' height='20' alt='Проекты в разговоре'>
+								</div>";
+						echo "</td>";
+						echo "<td>$count_call</td>";
+						echo "<td>$last_call</td>";
+						echo "<td>$downtime</td>";
+						echo "<td>$handling</td>";
+						echo "<td style = 'background-color: $tmp_color'>$ratio</td>";
+						
+					echo "</tr>";
+					$index_oper++;
+				}
+			echo "</table>";
+			echo "</div>";
+			
+			echo "<div id='reset_monitor'></div>";	//	убираем плавающие элементы
+		}
+
+		public function __construct(){
+			$this->get_current_date();
+			$this->get_opers();
+		}
+	}
+?>

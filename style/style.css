@@ -1,0 +1,670 @@
+/*	Пользовательские стили*/
+* {
+	font-family: Georgia;
+	font-size: 11pt;
+/*	padding: 0;
+	margin: 0;*/
+	box-sizing: border-box;
+}
+
+body {
+	font-family: sans-serif;
+}
+select {
+	margin: 2px;
+}
+#monitor_project{
+	float: left;
+	border: double 3px gray;
+	width: 700px;
+}
+#missed{
+	margin: 20px 0 0 0;
+	border: double 0px gray;
+	width: 700px;
+	height: 100px;
+}
+#monitor_oper{
+	margin-left: 710px;
+	border: double 3px gray;
+	width: 700px;
+}
+#reset_monitor{
+	clear: both;
+}
+td {
+	text-align: center;
+	width: 50px;
+}
+table {
+	margin: 5px;
+}
+.report_font > td{
+	font-family: Calibri;
+}
+.copyright {
+	text-align: right;
+}
+.table2 .col2 {
+	min-width: 350px;
+}
+.col1 {
+	min-width: 100px;
+}
+.col3 {
+	min-width: 100px;
+}
+.col4 {
+	min-width: 150px;
+}
+.col-max {
+	min-width: 100px;
+}
+.col-min >td{
+	min-width: 150px;
+}
+#notification {
+	color: red;
+	font-size: 8px;
+}
+.no_project{
+	width: 200px;
+}
+.show>td{
+	width: 200px;
+}
+/*
+	200
+*/
+
+/*
+	5ka
+*/
+
+.oper_col{
+	width: 300px;
+}
+
+#5ka_month>form{
+	float: left;
+	margin: 5px;
+}
+
+#header{
+	height: 110px;
+	border: 3px double #4682B4;
+	border-radius: 10px;
+	margin: 5px;
+}
+#header>a{
+	float: left;
+	padding: 3px 0 3px 15px;
+}
+#header_tittle{
+	text-align: center;
+	font-size: 35pt;
+	font-family: Georgia;
+	color: #808080;
+	padding: 1% 0 1% 0;
+}
+.title{
+	text-align: center;
+	font-size: 20pt;
+	margin: 5px;
+}
+.title input{
+	margin: 5px;
+}
+
+#title_main{
+	margin-left: 30%; /* Отступ слева */
+	margin-right: 30%; /* Отступ справа */ 
+}
+#title_main1{
+	margin-left: 50px;
+	
+}
+.project{
+	background-color: #FFF8DC;
+}
+.month1.month2{
+	float: none;
+/*	margin: 10px;*/
+/*	border-right: 3px solid grey;*/
+	width: 99%;
+}
+.month3{
+	float: left;
+	border-right: 1px solid grey;
+	width: 200px;
+}
+.month4{
+	margin-left: 200px;
+	text-align: center;
+}
+.table_header{
+	background-color: #2980b9;
+	color: #fff;
+}
+/*	Расположение картинок относительно текста*/
+.leftimg {
+	float:left; /* Выравнивание по левому краю */
+	margin: 7px 7px 7px 0; /* Отступы вокруг картинки */
+}
+.rightimg  {
+	float: right; /* Выравнивание по правому краю  */ 
+	margin: 7px 0 7px 7px; /* Отступы вокруг картинки */
+}
+.project_oper_work{
+	border: 0px double gray;
+	width: 1200px;
+	height: 60px;
+	margin: 3px 0 3px 0;
+	line-height: 60px;
+}
+.empty_project_oper_work{
+	border: 3px double gray;
+	width: 1200px;
+	height: 60px;
+	margin: 0px;
+	line-height: 60px;
+}
+.before_project{
+	float: left;
+	text-align: right;
+	padding-right: 3px;
+	border: 0px double gray;
+	width: 120px;
+	height: 60px;
+	margin-top: 0px;
+	line-height: 20px;
+/*	margin-left: 340px;*/
+}
+.current_project{
+	float: left;
+	border: 1px double gray;
+	width: 270px;
+	height: 60px;
+	text-align: center;
+	margin: 0px;
+	line-height: 30px;
+	word-wrap: break-word;
+	background-color: #D8BFD8;
+}
+.after_project{
+	float: left;
+	border: 0px double gray;
+	width: 150px;
+	height: 60px;
+	margin: 0px;
+	padding-left: 3px;
+	line-height: 20px;
+}
+.text1{
+	padding: 5px;
+	text-indent: 1.5em; /* Отступ первой строки */
+	text-align: justify; /* Выравнивание по ширине */
+}
+.list{
+	list-style: square outside;
+}
+h4{
+	text-align: center;
+}
+.in_progress{
+	text-align: center;
+	margin: 10px;
+	font-size: 30pt;
+}
+.tooltip {
+	display: inline-block; /* Строчно-блочный элемент */
+	position: relative; /* Относительное позиционирование */
+	}
+.tooltip:hover::after {
+	content: attr(data-title); /* Выводим текст */
+	position: absolute; /* Абсолютное позиционирование */
+	left: 20%; top: 30%; /* Положение подсказки */
+	z-index: 1; /* Отображаем подсказку поверх других элементов */
+	background: rgba(255,255,230,0.9); /* Полупрозрачный цвет фона */
+	font-family: Arial, sans-serif; /* Гарнитура шрифта */
+	font-size: 11px; /* Размер текста подсказки */
+	padding: 5px 10px; /* Поля */
+	border: 1px solid #333; /* Параметры рамки */
+	width: 100px;
+	word-wrap: break-word;
+}
+/*
+.table-fixed-head {
+  width: 99%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  height: 100vh;
+}*/
+/*
+.table-fixed-head th,
+.table-fixed-head td {
+  padding: 5px;
+  text-align: center;
+  width: 33.333vw;
+}
+*/
+.table-fixed-head thead {
+  background-color: rgb(0,112,192);
+  color: rgb(255,255,255);
+}
+/*
+.table-fixed-head thead tr {
+  display: block;
+  position: relative;
+}
+*//*
+.table-fixed-head tbody {
+  display: block;
+  overflow: auto;
+  width: 100%;
+  height: calc(100vh - 30px);
+}
+*/
+.table-fixed-head tbody tr:nth-child(even) {
+  background-color: #DDD;
+}
+
+/*	Пользовательские стили
+	end:
+*/
+
+/*	Разбиение общего списка очередей на колонки ==========================================================
+*/
+.column{
+	-webkit-column-width: 50px;
+	-moz-column-width: 50px;
+	column-width: 50px;
+	-webkit-column-count: 4;
+	-moz-column-count: 4;
+	column-count: 4;
+	-webkit-column-gap: 10px;
+	-moz-column-gap: 10px;
+	column-gap: 10px;
+	-webkit-column-rule: 1px solid #ccc;
+	-moz-column-rule: 1px solid #ccc;
+	column-rule: 1px solid #ccc;
+}
+/*	Разбиение общего списка очередей на колонки ==========================================================
+	end:
+*/
+
+.header_table{
+	background-color: #2980b9;
+	color: #fff;
+}
+
+/*
+	Красивый dropdown ==========================================================
+*/
+/* Custom dropdown */
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 10px; /* demo only */
+}
+
+.custom-dropdown select {
+  cursor:pointer;
+  background-color: #2980b9;
+  color: #fff;
+  font-size: inherit;
+  padding: .5em;
+  padding-right: 2.5em;	
+  border: 0;
+  margin: 0;
+  border-radius: 3px;
+  text-indent: 0.01px;
+  text-overflow: '';
+  -webkit-appearance: button; /* hide default arrow in chrome OSX */
+}
+
+.custom-dropdown::before,
+.custom-dropdown::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.custom-dropdown::after { /*  Custom dropdown arrow */
+  content: "\25BC";
+  height: 1em;
+  font-size: .625em;
+  line-height: 1;
+  right: 1.2em;
+  top: 50%;
+  margin-top: -.5em;
+}
+
+.custom-dropdown::before { /*  Custom dropdown arrow cover */
+  width: 2em;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 0 3px 3px 0;
+}
+
+.custom-dropdown select[disabled] {
+  color: rgba(0,0,0,.3);
+}
+
+.custom-dropdown select[disabled]::after {
+  color: rgba(0,0,0,.1);
+}
+
+.custom-dropdown::before {
+  background-color: rgba(0,0,0,.15);
+}
+
+.custom-dropdown::after {
+  color: rgba(0,0,0,.4);
+}
+/*
+	Красивый dropdown ==========================================================
+	end:
+*/
+
+/*
+	Красивая кнопка ==========================================================
+*/
+a.button13 {
+  display: inline-block;
+  width: 15em;
+  font-size: 80%;
+  color: rgba(255,255,255,.9);
+  text-shadow: #2e7ebd 0 1px 2px;
+  text-decoration: none;
+  text-align: center;
+  line-height: 1.1;
+  white-space: pre-line;
+  padding: .7em 0;
+  border: 1px solid;
+  border-color: #60a3d8 #2970a9 #2970a9 #60a3d8;
+  border-radius: 6px;
+  outline: none;
+  background: #60a3d8 linear-gradient(#89bbe2, #60a3d8 50%, #378bce);
+  box-shadow: inset rgba(255,255,255,.5) 1px 1px;
+}
+a.button13:first-line{
+  font-size: 170%;
+  font-weight: 700;
+}
+a.button13:hover {
+  color: rgb(255,255,255);
+  background-image: linear-gradient(#9dc7e7, #74afdd 50%, #378bce);
+}
+a.button13:active {
+  color: rgb(255,255,255);
+  border-color: #2970a9;
+  background-image: linear-gradient(#5796c8, #6aa2ce);
+  box-shadow: none;
+}
+/*
+	Красивая кнопка ==========================================================
+	end:
+*/
+
+/*	Реализация кнопки "Копировать" ==========================================================
+*/
+.bd-clipboard {
+	position: relative;
+	/*display: none;*/
+}
+@media (min-width: 768px) {
+	.bd-clipboard {
+		display: block;
+	}
+}
+.btn-clipboard {
+	float: left;
+	top: 8px;
+	right: 8px;
+	z-index: 10;
+	display: block;
+	padding: 4px 8px;
+	margin-top: 3px;
+	font-size: 12px;
+	color: #818a91;
+	cursor: pointer;
+	background-color: transparent;
+	border-radius: 4px;				
+}
+.bd-clipboard + pre {
+	margin-top: 0;
+}
+.btn-clipboard:hover {
+	color: #fff;
+	background-color: #027de7
+}
+/*	Реализация кнопки "Копировать" ==========================================================
+	end:
+*/
+
+
+/*	Реализация меню	==========================================================
+*/
+ul {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+ul li {
+  list-style: none;
+}
+ul li a {
+  position: relative;
+  display: block;
+  margin: 0 5px;
+  padding: 5px;
+  color: #aaa;
+  font-size: 15px;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: 0.5s;
+  overflow: hidden;
+}
+ul li a::before {
+  content: '';
+  position: absolute;
+  top: calc(50% - 2px);
+  left: -100%;
+  width: 100%;
+  height: 4px;
+  background: #2196f3;
+  transition: 0.5s;
+}
+ul li a:hover {
+  color: #fff;
+}
+ul li a:hover::before {
+  animation: animate .1s linear forwards; 
+}
+/*	Реализация меню	==========================================================
+	end:
+*/
+
+@keyframes animate {
+  0% {
+    top: calc(50% - 2px);
+    left: -100%;
+    height: 4px;
+    z-index: 1;
+  }
+  50% {
+    top: calc(50% - 2px);
+    left: 0;
+    height: 4px;
+    z-index: 1;
+  }
+  100% {
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: -1;
+  }
+}
+/*	Реализация меню	==========================================================
+	end:
+*/
+
+/*	Реализация табок ==========================================================
+*/
+
+/* Базовый контейнер табов */
+.tabs {
+	min-width: 320px;
+	max-width: 95%;
+	padding: 3px;
+	margin: 0 auto;
+}
+/* Стили секций с содержанием */
+.tabs>section {
+	display: none;
+	padding: 15px;
+	background: #fff;
+	border: 1px solid #ddd;
+}
+.tabs>section>p {
+	margin: 0 0 5px;
+	line-height: 1.5;
+	color: #383838;
+	/* прикрутим анимацию */
+	-webkit-animation-duration: 1s;
+	animation-duration: 1s;
+	-webkit-animation-fill-mode: both;
+	animation-fill-mode: both;
+	-webkit-animation-name: fadeIn;
+	animation-name: fadeIn;
+}
+/* Описываем анимацию свойства opacity */
+ 
+@-webkit-keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+/* Прячем чекбоксы */
+.tabs>input {
+	display: none;
+	position: absolute;
+}
+/* Стили переключателей вкладок (табов) */
+.tabs>label {
+	display: inline-block;
+	margin: 0 0 -1px;
+	padding: 10px 15px;
+	font-weight: 600;
+	text-align: center;
+	font-size: 11pt;
+	color: #aaa;
+	border: 0px solid #ddd;
+	border-width: 1px 1px 1px 1px;
+	background: #f1f1f1;
+	border-radius: 3px 3px 0 0;
+}
+/* Шрифт-иконки от Font Awesome в формате Unicode */
+.tabs>label:before {
+	font-family: fontawesome;
+	font-weight: normal;
+	margin-right: 10px;
+}
+.tabs>label[for*="1"]:before {
+	content: "\f19a";
+}
+.tabs>label[for*="2"]:before {
+	content: "\f17a";
+}
+.tabs>label[for*="3"]:before {
+	content: "\f13b";
+}
+.tabs>label[for*="4"]:before {
+	content: "\f13c";
+}
+.tabs>label[for*="5"]:before {
+	content: "\f13c";
+}
+.tabs>label[for*="6"]:before {
+	content: "\f13c";
+}
+/* Изменения стиля переключателей вкладок при наведении */
+ 
+.tabs>label:hover {
+	color: #888;
+	cursor: pointer;
+}
+/* Стили для активной вкладки */
+.tabs>input:checked+label {
+	color: #555;
+	border-top: 1px solid #009933;
+	border-bottom: 1px solid #fff;
+	background: #B0C4DE;
+}
+/* Активация секций с помощью псевдокласса :checked */
+#tab1:checked~#content-tab1, 
+#tab2:checked~#content-tab2, 
+#tab3:checked~#content-tab3, 
+#tab4:checked~#content-tab4, 
+#tab5:checked~#content-tab5, 
+#tab6:checked~#content-tab6 
+{
+	display: block;
+}
+/* Убираем текст с переключателей 
+* и оставляем иконки на малых экранах
+*/
+ 
+@media screen and (max-width: 680px) {
+	.tabs>label {
+		font-size: 0;
+	}
+	.tabs>label:before {
+		margin: 0;
+		font-size: 18px;
+	}
+}
+/* Изменяем внутренние отступы 
+*  переключателей для малых экранов
+*/
+@media screen and (max-width: 400px) {
+	.tabs>label {
+		padding: 15px;
+	}
+}
+/*	Реализация табок ==========================================================
+	end:
+*/
+
+/*	Настройки стилей для отдельных табок ==========================================================
+*/
+.tabs>section>p.content-tab1>span{
+	color: red;
+	font-size: 25pt;
+}
+.table1{
+	min-width: 80%;
+	margin: 3% 10%;
+}
+#file_config{
+	text-align: left;
+	margin: 10px;
+}
+/*	Настройки стилей для отдельных табок ==========================================================
+	end:
+*/

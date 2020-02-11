@@ -1,0 +1,253 @@
+<?php
+/*	===!!! template for debug !!!===
+
+	echo '<pre>';
+		var_dump($result3);
+	echo '</pre>';
+
+	===!!! template for debug !!!===	*/
+
+	include('line24_project.class');
+
+	class line24_summary extends line24_project
+	{
+		public $time_duration_array = array();					//	поле содержит массив операторов у которых был разговор
+		
+		/*
+			Метод получает дату заполняет поле $array_csv (содержит массив записей по дате/оператору/проекту)
+		*/
+		public function get_selected_csv($date_start, $date_end, $oper_id){
+			$selected_start_date = $this->change_date($date_start);
+			$selected_end_date = $this->change_date($date_end);
+
+			//	POST ссылка на "Входящие" для авторизации
+			$url6 = "http://localhost/cc-line24/admin.php/calls/in";
+			$url7 = "http://localhost/cc-line24/admin.php/calls/in?date%5Bstart%5D=$selected_start_date+00%3A00&date%5Bend%5D=$selected_end_date+23%3A59&directid%5B0%5D=&queue%5B0%5D=&agent%5B0%5D=$oper_id&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+
+			$ch = curl_init ($url6);
+			$path1 = dirname(__FILE__). '/data/cookie.txt';
+			curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+			curl_setopt($ch, CURLOPT_URL,$url6);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+			curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=admin&password=OGMzMTQ2OD");
+			curl_exec($ch);
+
+			curl_setopt($ch, CURLOPT_URL,$url7);
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+			$result3 = curl_exec($ch);
+
+			$this->array_csv = $this->from_csv_to_array($result3);
+
+			/*
+				Структура csv файла
+				[0] =>	#
+				[1] =>	Дата
+				[2] =>	Время
+				[3] =>	Вх.Номер
+				[4] =>	Очередь
+				[5] =>	Оператор
+				[6] =>	Телефон
+				[7] =>	Ожидание
+				[8] =>	Разговор
+				[9] =>	Завершил
+				[10] =>	Обработка
+				[11] =>	Запись
+				[12] =>	Обр.вызов
+			*/
+		}
+		
+		/*
+			Метод получает начальную и конечные даты и id оператора и возвращает true если было время разговора и false если не было
+		*/
+		public function get_time_duration($start_day, $end_day, $oper_id){
+			$selected_start_day = $this->change_date($start_day);
+			$selected_end_day = $this->change_date($end_day);
+
+			//	POST ссылка на "Входящие" для авторизации
+			$url6 = "http://localhost/cc-line24/admin.php/calls/in";
+			$url7 = "http://localhost/cc-line24/admin.php/reports/agents?date_filter%5Bstart%5D=$selected_start_day&date_filter%5Bend%5D=$selected_end_day&agent=$oper_id&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+
+			$ch = curl_init ($url6);
+			$path1 = dirname(__FILE__). '/data/cookie.txt';
+			curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+			curl_setopt($ch, CURLOPT_URL,$url6);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+			curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=admin&password=OGMzMTQ2OD");
+			curl_exec($ch);
+
+			curl_setopt($ch, CURLOPT_URL,$url7);
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+			$result3 = curl_exec($ch);
+
+			$array_csv = $this->from_csv_to_array($result3);
+
+			/*
+				Структура csv файла
+				[0] =>	Дата
+				[1] =>	Вход
+				[2] =>	Выход
+				[3] =>	"В системе"
+				[4] =>	"Разговор (вход.): Время"
+				[5] =>	"Разговор (вход.): %"
+				[6] =>	"Обработка: Время"
+				[7] =>	"Обработка: %"
+				[8] =>	"Пауза: Время"
+				[9] =>	"Пауза: %"
+				[10] =>	"Простой: Время"
+				[11] =>	"Простой: %"
+			*/
+
+			foreach($array_csv as $key => $value){
+				if($key == 0 OR $value[4] == '') continue;		//	пропускаем шапку
+				if($value[4] == '0:00:00' OR $value == '') continue;	//	пропускаем дни где не было времени в разговоре
+				return true;
+			}
+			return false;
+		}
+		
+		/*
+			Метод получает начальную и конечную даты и oper_id и заполняет поле $time_duration_array
+		*/
+		public function get_active_oper($date_start, $date_end){
+			foreach($this->array_oper as $key => $value){
+				if($this->get_time_duration($date_start, $date_end, $key)){
+					$this->time_duration_array[$key] = $value;
+				}
+			}
+		}
+		
+		/*
+			Метод принимает массив csv и массив работы в линии формирует массив $project_array где:
+			$key = day	=>	$value = array(
+											project_name => array(
+												'duration_time' => время в разговоре
+												'time_in_line' => время в линии
+											);
+											'total_duration_time' => общее время в разговоре за день
+											'total_time_in_line' => общее время в линии за день
+							);
+		*/
+		public function get_project_array($array_csv){
+			$project_array = array();
+
+			foreach($array_csv as $key => $value){
+				if($key == 0) continue;		//	пропускаем шапку
+				if(isset($project_array[$value[1]][$value[4]])){	//	если существует такой проект то обновляем информацию по нему
+					$project_array[$value[1]][$value[4]]['duration_time'] = $this->from_sec_to_str($this->from_str_to_sec($project_array[$value[1]][$value[4]]['duration_time']) + $this->from_str_to_sec($value[8]));
+				} else {	//	если такого проекта нет то заполняем первыми данными
+					$project_array[$value[1]][$value[4]]['duration_time'] = $value[8];
+				}
+				if(isset($project_array[$value[1]]['total_duration_time'])){	//	если уже есть инфа за весь день то заполняем
+					$project_array[$value[1]]['total_duration_time'] = $this->from_sec_to_str($this->from_str_to_sec($value[8]) + $this->from_str_to_sec($project_array[$value[1]]['total_duration_time']));
+					$project_array[$value[1]]['total_duration_time_ceil'] += ceil($this->from_str_to_sec($value[8]) / 60);
+				} else {	//	если нет инфы за весь день то заполняем первыми данными
+					$project_array[$value[1]]['total_duration_time'] = $value[8];
+					$project_array[$value[1]]['total_duration_time_ceil'] = ceil($this->from_str_to_sec($value[8]) / 60);
+				}
+				$project_array[$value[1]]['total_time_in_line'] = $this->selected_time_in_line[$value[1]];
+			}
+
+			$this->project_array = $project_array;
+		}
+		
+		/*
+			Метод принимает массив работы оператора на проектах и возвращает количество минут за час (в рамках месяца)
+		*/
+		public function get_oper_work_month($project_array){
+			$total_duration_time_month = 0;
+			$total_time_in_line_month = 0;
+
+			foreach($project_array as $key => $value){		//	$key = дата
+				$total_duration_time = $value['total_duration_time'];
+				$total_time_in_line = $value['total_time_in_line'];
+
+				$total_duration_time_month += $this->from_str_to_sec($total_duration_time);
+				$total_time_in_line_month += $this->from_str_to_sec($total_time_in_line);
+			}
+			$total_duration_time_month = $this->from_sec_to_str($total_duration_time_month);
+			$total_time_in_line_month = $this->from_sec_to_str($total_time_in_line_month);
+
+			if($this->from_str_to_sec($total_time_in_line_month) == 0){
+				$total_ratio_month = 0;
+			} else {
+				$total_ratio_month = round($this->from_str_to_sec($total_duration_time_month) / $this->from_str_to_sec($total_time_in_line_month) * 60, 2);
+			}
+
+			$summary_array = array(
+				'total_duration_time_month' => $total_duration_time_month,
+				'total_time_in_line_month' => $total_time_in_line_month,
+				'total_ratio_month' => $total_ratio_month,
+			);
+
+			return $summary_array;
+		}
+
+		/*
+			Метод принимает начальную и конечную даты и отображает сводную в удобной форме
+		*/
+		public function show_summary($start_day, $end_day){
+			$index = 1;
+
+			$tmp_value = explode("-", $start_day);
+			$tmp_month = $tmp_value[1];
+			$tmp_year = $tmp_value[0];
+			
+			echo "<p class = 'title'>Сводный отчет за: <span style = 'color:red; font-size: 20pt;'>".$this->array_month[$tmp_month]."</span> $tmp_year</p>";
+			echo "<div id = 'title_main1'>";
+			echo "<table class = 'project' border = 1>";
+				echo "<tr>";
+					echo "<td class = 'header_table' style = 'width:50px'>№ п/п</td>";
+					echo "<td class = 'header_table' style = 'width:250px'>ФИО оператора</td>";
+					echo "<td class = 'header_table' style = 'width:150px'>Время в разговоре</td>";
+					echo "<td class = 'header_table' style = 'width:90px'>Время в линии</td>";
+					echo "<td class = 'header_table' style = 'width:90px'>Количество минут в час</td>";
+					echo "<td class = 'header_table' style = 'width:50px'>КПД</td>";
+					echo "<td class = 'header_table' style = 'width:110px'>Подробный отчет за месяц</td>";
+					
+				echo "</tr>";
+			foreach($this->time_duration_array as $key => $value){	//	идем по операторам которые работали в этом месяце
+				echo "<tr>";
+//					if($index == 10) break;
+					echo "<td>$index</td>";			//	выводим порядковый номер
+					echo "<td>$value</td>";			//	выводим ФИО оператора
+					$this->get_selected_csv_oper($start_day, $end_day, $key);
+					$this->get_time_in_line($start_day, $end_day, $key);
+					$this->get_project_array($this->array_csv);
+					$tmp_summary = $this->get_oper_work_month($this->project_array);
+					$duration = $tmp_summary['total_duration_time_month'];
+					$time_in_line = $tmp_summary['total_time_in_line_month'];
+					$ratio = $tmp_summary['total_ratio_month'];
+					$kpd = round($ratio / 60 * 100, 0);
+					
+					if($ratio < 10){
+						$tmp_color = 'Chocolate';
+					} elseif($ratio < 30) {
+						$tmp_color = 'Aquamarine';
+					} elseif ($ratio < 60) {
+						$tmp_color = 'YellowGreen';
+					} elseif($ratio > 60) {
+						$tmp_color = 'Salmon';
+					} else {
+						$tmp_color = '';
+					}
+					
+					echo "<td>$duration</td>";		//	выводим время в разговоре
+					echo "<td>$time_in_line</td>";	//	выводим время в линии
+					echo "<td style = 'background-color: $tmp_color'>$ratio</td>";			//	выводим количество минут в час
+					echo "<td>$kpd%</td>";
+					$tmp_link = "line24_oper_month.php?selected_oper=$key&selected_month=$tmp_month&selected_year=$tmp_year";
+					echo "<td><a href='$tmp_link' target='_blank'><img src='img/month.png' width='25' height='25' alt='Отчет за месяц'></a></td>";	//	выводим ссылку на подробный отчет по оператору за месяц
+					$index++;
+				echo "</tr>";
+			}
+			echo "</table>";
+			echo "</div>";
+		}
+
+		public function __construct(){
+			$this->get_opers();
+		}
+	}
+?>

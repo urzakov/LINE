@@ -1,0 +1,98 @@
+<?php
+/*	===!!! template for debug !!!===
+
+	echo '<pre>';
+		var_dump($result3);
+	echo '</pre>';
+
+	===!!! template for debug !!!===	*/
+	
+	include('line24_upload_audio.class');
+
+	class line24_oper_info extends line24_upload_audio
+	{
+		
+		/*
+			Метод принимает нач. дату и кон. дату и oper_id и формирует массив времени работы оператора
+		*/
+		public function get_oper_pauses($start_day, $end_day, $oper_id){
+			$mysqli = new mysqli(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME);
+			if($mysqli->connect_errno){
+				printf("Не удалось подключиться: %s\n", $mysqli->connect_error);
+				exit();
+			}
+			$mysqli->query("SET NAMES utf8;");
+			$sql = "
+				SELECT *
+				FROM  `actions_log`
+				WHERE `agent_id` = $oper_id
+				AND `action_start` BETWEEN '$start_day 0:00:00' AND '$end_day 23:59:59'
+				";
+			$result = $mysqli->query($sql);
+			$selected_array = array();
+			$index = 0;
+			if($result->num_rows > 0){
+				while($row = $result->fetch_assoc()){
+					$selected_array[$index] = $row;
+					$index++;
+				}
+			}
+			$mysqli->close();
+			
+			/*
+				Структура массива $array_oper_pauses
+				['id'] = id
+				['agent_id'] = id оператора из таблицы agents
+				['action'] = действие, напр., login, pause
+				['actor_start'] = Инициатор акции
+				['actor_end'] = Инициатор завершения акции
+				['action_start'] = дата-время начала действия
+				['action_end'] = дата-время окончания действия
+				['phone'] = телефон, с которого совершено действие
+				['reason_id'] = ID причины постановки в паузу
+			*/
+			
+			$array_oper_pauses = array();
+			$index = 0;
+			foreach($selected_array as $key => $value){
+				if($value['reason_id'] != 0){	//	если это постановка в паузу
+					$array_oper_pauses[$index]['start_time'] = $value['action_start'];
+					$array_oper_pauses[$index]['end_time'] = $value['action_end'];
+					$index++;
+				}
+			}
+			
+/*			echo '<pre>';
+				var_dump($selected_array);
+			echo '</pre>';*/
+			return $array_oper_pauses;
+		}
+		
+		/*
+			Метод принимает массив пауз оператора и время и возвращает TRUE если оператор был в это время в паузе и FALSE если в работе
+		*/
+		public function get_oper_flag_by_time($array_oper_pauses, $selected_time){
+//			echo $this->get_second_by_time($selected_time);
+
+			foreach($array_oper_pauses as $key => $value){
+				if($this->get_second_by_time($value['start_time']) <= $this->get_second_by_time($selected_time) AND $this->get_second_by_time($selected_time) <= $this->get_second_by_time($value['end_time'])) return TRUE;
+			}
+			return FALSE;
+		}
+		
+		/*
+			Метод принимает время в формате 2020-01-22 10:10:10 и возвращает какая это секунда в рамках дня
+			например 36610
+		*/
+		public function get_second_by_time($time){
+			$tmp_second = explode(' ', $time);
+			$tmp_second1 = explode(':', $tmp_second[1]);
+			return $tmp_second1[0] * 3600 + $tmp_second1[1] * 60 + $tmp_second1[2];
+		}
+
+
+		public function __construct(){
+			$this->get_opers();
+		}
+	}
+?>

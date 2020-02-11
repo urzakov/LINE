@@ -1,0 +1,245 @@
+<?php
+/*	===!!! template for debug !!!===
+
+	echo '<pre>';
+		var_dump($result3);
+	echo '</pre>';
+
+	===!!! template for debug !!!===	*/
+	
+	include('line24_monitor.class');
+
+	class line24_upload_audio extends line24_monitor
+	{
+		public $array_project = array();							//	поле содержит все проекты , где $key = project_id => $value = project_name
+//		public $queue_anketa;										//	после содержит id анкеты
+//		public $array_anketa = array();								//	массив с анкетой
+		public $index_result;										//	индекс результата
+		public $index_tel;											//	индекс телефона
+		public $index_date;											//	индекс даты
+//		public $index2;											//	индекс времени
+//		public $array_status = array();								//	массив со статусами
+//		public $selected_queue;										//	выбранная очередь
+		public $array_anketa_result;								//	массив с выбранными результатами где $key = uniqid => $value = result
+
+		/*
+			Метод заполняет массив $array_project , где $key = project_id => $value = project_name
+		*/
+		public function get_array_project(){
+			$mysqli = new mysqli(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME);
+			if ($mysqli->connect_errno) {
+				printf("Не удалось подключиться: %s\n", $mysqli->connect_error);
+				exit();
+			}
+			$mysqli->query("SET NAMES utf8;");
+			$sql = "
+				SELECT id, name
+				FROM  `queues`
+				WHERE hidden = 0
+				";
+			$result = $mysqli->query($sql);
+			$array_queues = array();
+			if ($result->num_rows > 0) {
+				while($row = $result->fetch_assoc()) {
+				$array_queues[$row["id"]] = $row["name"];
+				}
+			}
+			asort($array_queues);
+			$this->array_project = $array_queues;
+			$mysqli->close();
+		}
+
+		
+
+		
+		
+		/*
+			Метод принимает массив выбранных результатов звонка $array_selected_result и выбирает из анкет нужные записи
+		*/
+		public function get_array_anketa_result($array_selected_result, $array_anketa){
+			$array_anketa_result = array();
+			$index = '';
+//			echo $this->index_date;
+//			echo "<BR>";
+//			$array_anketa = $this->array_anketa;
+			foreach($array_anketa as $key => $value){
+				if($key == 0) continue;		//	пропускаем шапку
+				if(in_array($value[$this->index_result], $array_selected_result)){	//	если запись содержит выбранный результат звонка
+					$index = $this->correct_date($value[$this->index_date]).'-'.$value[1].'-'.$value[$this->index_tel];
+//					echo "<BR>";
+					$array_anketa_result[$index] = $value[$this->index_result];
+				}
+			}
+			
+			$this->array_anketa_result = $array_anketa_result;
+			
+/*			echo '<pre>';
+				var_dump($array_anketa_result);
+			echo '</pre>';*/
+		}
+		
+		/*
+			Метод принимает дату в формате 17.01.20 и возвращает в формате 17-01-20
+		*/
+		public function correct_date($date){
+			$tmp_date = explode('.', $date);
+/*			echo '<pre>';
+				var_dump($tmp_date);
+			echo '</pre>';*/
+			return trim($tmp_date[0], "\"").'-'.trim($tmp_date[1], "\"").'-'.trim($tmp_date[2], "\"");
+		}
+		
+		/*
+			Метод получает дату в формате 2020-01-17 и возвращает в формате 17.01
+		*/
+		public function get_short_date($date){
+			$tmp_date = explode('-', $date);
+			return $tmp_date[2].'.'.$tmp_date[1];
+		}
+		
+		/*
+			Метод создает массив $array_billing_result проходится по нему и создает результативный массив $array_audio
+		*/
+		public function get_array_audio($date_start, $end_day, $project_id){
+			$array_audio = array();
+			$array_billing_result = array();
+			/*
+				Структура csv файла
+				[0] =>	#
+				[1] =>	Дата
+				[2] =>	Время
+				[3] =>	Вх.Номер
+				[4] =>	Очередь
+				[5] =>	Оператор
+				[6] =>	Телефон
+				[7] =>	Ожидание
+				[8] =>	Разговор
+				[9] =>	Завершил
+				[10] =>	Обработка
+				[11] =>	Запись
+				[12] =>	Обр.вызов
+			*/
+			
+/*			echo '<pre>';
+				var_dump($array_csv);
+			echo '</pre>';*/
+			
+			foreach($this->array_csv as $key => $value){
+				if($key == 0) continue;		//	пропускаем шапку
+//					echo $this->correct_date($value[1]);
+//					echo "<BR>";
+				$index = $this->correct_date($value[1]).'-'.$value[2].'-'.$value[6];
+				$array_billing_result[$index] = $value[11];
+			}
+				
+/*			echo '<pre>';
+				var_dump($array_billing_result);
+			echo '</pre>';*/
+
+			//	удаляем все файлы в папке "temp"
+			$path_temp = dirname(__FILE__). '/temp/';
+			$files = scandir($path_temp);
+			foreach($files as $value) if(strlen($value) > 2) unlink($path_temp.$value);
+			
+			foreach($this->array_anketa_result as $key => $value){
+//				echo "<BR>$key";
+				$audio = $array_billing_result[$key];
+				$path1 = 'http://192.168.2.253/cc-line24/'.$audio;
+				$tmp_name = explode('-', $key);
+				$new_name = $tmp_name[0].'-'.$tmp_name[1].'-'.$tmp_name[2].'-'.$tmp_name[4];
+				$path2 = dirname(__FILE__). '/temp/'.$new_name.'.mp3';
+//				echo "<BR>";
+				copy($path1, $path2);
+				$array_audio[$key] = $audio;
+			}
+			
+			$first_day = $this->get_short_date($date_start);
+			$last_day = $this->get_short_date($end_day);
+			if($first_day == $last_day){
+				$period = "$first_day";
+			} else {
+				$period = "$first_day - $last_day";
+			}
+			
+			echo '<p class = "title">По проекту <span style = "color:red; font-size: 20pt;">'.$this->array_project[$project_id].'</span> за <span style = "color:red; font-size: 20pt;">'.$period.'</span> cохранено аудио записей '.count($array_audio).' шт.';
+
+			//	Создаем zip-архив
+			$zip = new ZipArchive;
+			
+			$tmp_name = $this->array_project[$project_id].' '.$period;
+			$filename = 'temp/'.$tmp_name.'.zip';
+			if ($zip->open($filename, ZipArchive::CREATE) === TRUE) {
+				//	проходимся по всем файлам в папке "temp" и добавляем их в архив
+				$path_temp = dirname(__FILE__). '/temp/';
+				$files = scandir($path_temp);
+				foreach($files as $value){
+					if(strlen($value) > 2){
+						$zip->addFile($path_temp.$value, $value);
+					}
+				}
+				
+				$zip->close();
+//				echo 'готово';
+			} else {
+				echo "<BR>Ошибка создания архивного файла";
+			}
+
+			echo "<BR><p>Скачать архив с файлами <a href='$filename' ><img src='img/zip.png' alt='DownloadAudio'></a>";
+			
+			
+/*			$zip = new ZipArchive();
+			$filename = "temp/test.zip";
+
+			if ($zip->open($filename, ZipArchive::CREATE)!==TRUE) {
+				exit("Невозможно открыть <$filename>\n");
+			}
+*/
+//			$zip->addFromString("testfilephp.txt" . time(), "#1 Это тестовая строка добавляется в качестве testfilephp.txt.\n");
+//			$zip->addFromString("testfilephp2.txt" . time(), "#2 Это тестовая строка добавляется в качестве testfilephp2.txt.\n");
+/*			$zip->addFile($thisdir . "/too.php","/testfromfile.php");
+			echo "numfiles: " . $zip->numFiles . "\n";
+			echo "status:" . $zip->status . "\n";
+			$zip->close();*/
+			
+			//	проходимся по всем файлам в папке "temp" и добавляем их в архив
+/*			$path_temp = dirname(__FILE__). '/temp/';
+			$files = scandir($path_temp);
+			foreach($files as $value){
+				if(strlen($value) > 2){
+					$zip->addFile($value);
+				}
+			}*/
+//			$zip->close();
+
+/*			echo '<pre>';
+				var_dump($array_audio);
+			echo '</pre>';*/
+		}
+		
+		/*
+			Метод получает массив $array_status и выводит форму для выбора нужных статусов
+		*/
+		public function show_status($array_status){
+			echo "<form id = 'form1' action = '' method = 'post'>";
+				echo "Выберите результаты звонка:";
+				echo "<BR>";
+				foreach($array_status as $key => $value){
+					echo "<input type = 'checkbox' name = '$key' value = '$value' checked>$value<BR>";
+				}
+			$start_day = $_POST['start_day'];
+			$end_day = $_POST['end_day'];
+			$project_id = $_POST['selected_project'];
+			echo "<input type='hidden' name='selected_result' value='1'>";
+			echo "<input type='hidden' name='start_day' value=$start_day>";
+			echo "<input type='hidden' name='end_day' value=$end_day>";
+			echo "<input type='hidden' name='selected_project' value=$project_id>";
+			
+			echo "<input style='margin:5px;' type='submit' value='Показать результаты'><BR>";
+			echo "</form>";
+		}
+
+		public function __construct(){
+			$this->get_array_project();
+		}
+	}
+?>

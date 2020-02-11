@@ -1,0 +1,773 @@
+<?php
+/*	===!!! template for debug !!!===
+
+	echo '<pre>';
+		var_dump($result3);
+	echo '</pre>';
+
+	===!!! template for debug !!!===	*/
+
+	define('DB_LOCATION', 'localhost');
+	define('DB_NAME', 'cc-line24');
+	define('DB_NAME1', 'cards-line24');
+	define('DB_NAME2', 'asteriskcdrdb');
+	define('DB_USER', 'root');
+	define('DB_PASSWORD', 'NTE0M2FjYj');
+
+	class line24_statistic
+	{
+		public $array_project = array();							//	поле содержит все проекты , где $key = project_id => $value = project_name
+		public $array_csv = array();								//	массив csv файла
+		public $report = array();									//	массив отчета
+
+		public $selected_queue;										//	выбранная очередь
+		public $selected_day;										//	выбранный день
+
+		public $array_UTC = array(									//	часовые пояса
+			'2' => 'Киев',
+			'3' => 'Москва'
+		);
+		public $current_UTC = '2';									//	наш часовой пояс
+		public $project_UTC = '3';									//	часовой пояс проекта
+		public $selected_UTC;										//	выбранный часовой пояс
+
+		public $array_redirected = array(							//	массив проектов которые используют для отчета перенаправление, где $key = project_id => $value = dst (внутр. номер)
+			'538' => '3190',
+			'528' => '3196'
+		);
+
+		public $array_losted = array(								//	массив очередей по которым нужно удалять запись
+			'545' => '545',				//	СИМ-Авто(К)
+			'539' => '539',				//	МосКальян (К)
+			'524' => '524',				//	Дёке Экстружн(К)
+			'644' => '644',				//	ВелесстройN (К)
+			'652' => '652',				//	Стоматорг (К)
+			'653' => '653',				//	БДР Термия (К)
+			'529' => '529'				//	Тяньши (К)
+		);
+
+		public $array_losted_sec = array(							//	массив секунд по которым нужно удалять запись
+			'545' => '3',				//	СИМ-Авто(К)
+			'539' => '3',				//	МосКальян (К)
+			'524' => '3',				//	Дёке Экстружн(К)
+			'644' => '5',				//	ВелесстройN (К)
+			'652' => '5',				//	Стоматорг (К)
+			'653' => '3',				//	БДР Термия (К)
+			'529' => '5'				//	Тяньши (К)
+		);
+
+		public $array_to_report = array(	//	поле содержит очереди для отчета где $key = queue_id => $value = queue_name
+//			"639" => "СевенПро(К)",
+//			"640" => "СевенТек",
+//			"641" => "СевенПро ТП (К)",
+//			"638" => "СевенПро Н(К)",
+			"533" => "Рег оператор Каширский",
+			"526" => "Рег оператор Рузский",
+			"527" => "Рег оператор Серг-Посад",
+			"520" => "Рег оператор Куприт",
+//			"528" => "Домофон",
+			"545" => "СИМ-Авто",
+			"548" => "КДВ-Групп",
+			"549" => "Технор",
+			"550" => "Согласие Вита",
+//			"542" => "Доминос",
+			"531" => "Сонет",
+//			"539" => "МосКальян",
+//			"525" => "ЭРГО Жизнь",
+//			"530" => "Мебельный сервис",
+//			"643" => "Антиплагиат",
+			"611" => "cedrus2_88005008968",
+			"621" => "cedrus4_88005000606",
+			"622" => "cedrus6_84957770378",
+			"623" => "cedrus8_84957770381",
+			"624" => "cedrus9_84957770005",
+			"625" => "cedrus1_88005009945",
+			"626" => "cedrus3_88005007975",
+			"627" => "cedrus5_84957770379",
+			"628" => "cedrus7_84957770380",
+			"629" => "cedrus10_88005002907",
+			"630" => "cedrus_kazan",
+			"631" => "cedrus_kolomna",
+			"632" => "cedrus_krasnodar",
+			"633" => "cedrus_nevinnomisk",
+			"634" => "cedrus_nn",
+			"635" => "cedrus_samara",
+			"636" => "cedrus_simferopol",
+			"637" => "cedrus_spb",
+			"544" => "Мультипасс",
+			"524" => "Дёке Экстружн",
+			"538" => "ХарвиРус",
+//			"536" => "Велесстрой (old)",
+			"644" => "Велесстрой",
+//			"543" => "Снежная Королева",
+//			"537" => "Магнит",
+//			"652" => "Стоматорг",
+			"523" => "Магнум",
+			"653" => "БДР Термия",
+			"535" => "Виномания",
+//			"546" => "Легенды Столицы",
+			"529" => "Тяньши",
+//			"540" => "Талия",
+			"547" => "Терволина",
+//			"704" => "Кофактор",
+			"522" => "Агама Истра",
+			"525" => "Молочный комбинат",
+			"536" => "Куубер",
+			"532" => "ПиАрПи",
+			"534" => "Ханса",
+//			"669" => "Кибер Кар",
+		);
+
+		public $array_max_delay = array(							//	поле содержит очереди для отчета по макс задержке (столбец ожидание) где $key = queue_id => $value = queue_name
+			"611" => "cedrus2_88005008968",
+			"621" => "cedrus4_88005000606",
+			"622" => "cedrus6_84957770378",
+			"623" => "cedrus8_84957770381",
+			"624" => "cedrus9_84957770005",
+			"625" => "cedrus1_88005009945",
+			"626" => "cedrus3_88005007975",
+			"627" => "cedrus5_84957770379",
+			"628" => "cedrus7_84957770380",
+			"629" => "cedrus10_88005002907",
+			"630" => "cedrus_kazan",
+			"631" => "cedrus_kolomna",
+			"632" => "cedrus_krasnodar",
+			"633" => "cedrus_nevinnomisk",
+			"634" => "cedrus_nn",
+			"635" => "cedrus_samara",
+			"636" => "cedrus_simferopol",
+			"637" => "cedrus_spb"
+		);
+		
+		public $selected_time_in_line = array();						//	поле содержит массив времени в линии выбранных дней
+
+		/*
+			Метод принимает queue_name проекта и возвращает anketa_id
+		*/
+		public function get_anketa($queue_name){
+			$mysqli = new mysqli(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME1);
+			if ($mysqli->connect_errno) {
+				printf("Не удалось подключиться: %s\n", $mysqli->connect_error);
+				exit();
+			}
+			$mysqli->query("SET NAMES utf8;");
+			$sql = "
+				SELECT DISTINCT(first_version_id) as id
+				FROM `card_definition_versions`
+				WHERE `name` = '$queue_name'
+				";
+			$result = $mysqli->query($sql);
+			$anketa = '';
+			if ($result->num_rows > 0) {
+				while($row = $result->fetch_assoc()) {
+				$anketa = $row['id'];
+				}
+			}
+			$mysqli->close();
+			return $anketa;
+		}
+		
+		/*
+			Метод принимает id карточки, начальную и конечную даты и заполняет массив $array_anketa
+		*/
+		public function get_array_anketa($anketa_id, $date_start, $date_end){
+			// POST ссылка на "Отчеты" для авторизации
+			$url1 = "http://localhost/cards-line24/index.php/reports/clients";
+			$ch = curl_init ($url1);
+			$path1 = dirname(__FILE__). '/data/cookie.txt';
+			curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+			curl_setopt($ch, CURLOPT_URL,$url1);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+			curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=admin&password=OGMzMTQ2OD");
+			curl_exec($ch);
+			// GET ссылка на "Анкеты" с фильтрами по нужному дню и номеру очереди
+			$tmp_day_start = $this->change_date($date_start);
+			$tmp_day_end = $this->change_date($date_end);
+			$url2 = "http://localhost/cards-line24/index.php/operations/calls_export?with_calls=1&export=1&card_id=$anketa_id&date%5Bstart%5D=$tmp_day_start&date%5Bend%5D=$tmp_day_end";
+			curl_setopt($ch, CURLOPT_URL,$url2);
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+			$result = curl_exec($ch);
+			$array_anketa = array();
+			$index_str = 0;
+			$tmp_str = '';
+			for($i = 0, $len = strlen($result); $i < $len; $i++){
+				if(ord($result[$i]) == 10){	//	если был перенос строки = конец строки
+					$tmp_str1 = explode(";", $tmp_str);
+					if($index_str == 0){	//	если это шапка то получаем индексы столбцов
+						foreach($tmp_str1 as $key => $value){
+							if($value == '"Результат звонка"') $this->index_result = $key;
+							if($value == '﻿"Дата - Дата"') $this->index_date = $key;
+							if($value == 'Телефон') $this->index_tel = $key;
+						}
+					}
+					$array_anketa[$index_str] = $tmp_str1;
+					$index_str ++;
+					$tmp_str = '';
+				} else {
+					$tmp_str .= $result[$i];
+				}
+			}
+			
+			//	убираем случайные переноси строки
+			$new_array_anketa = array();
+			foreach($array_anketa as $key => $value){
+				if($key == 0){	//	если это шапка запоминаем количество столбцов в таблице
+					$column_count = count($value);
+				}
+				if(count($value) != $column_count){	//	если это битая запись, то собираем все в одну строку $tmp_str
+					$tmp_str = '';
+					foreach($value as $key1 => $value1){
+						$tmp_str .= $value1;
+					
+						$new_array_anketa[$key - 1][$column_count - 1] .= $tmp_str;
+					}
+					$new_array_anketa[$key - 1][$column_count - 1] .= $tmp_str;
+	
+					continue;
+				}
+				
+				$new_array_anketa[$key] = $value;
+			}
+			return $new_array_anketa;
+		}
+
+		/*
+			Метод получает массив анкет $array_anketa и возвращает массив статусов $array_status
+		*/
+		public function get_array_status($array_anketa){
+			$index = 0;
+			$array_status = array();
+			foreach($array_anketa as $key => $value){
+				if($key == 0) continue;		//	пропускаем шапку
+				if(!in_array($value[$this->index_result], $array_status)){
+					$array_status[$index] = $value[$this->index_result];
+					$index++;
+				}
+			}
+			return $array_status;
+		}
+
+		/*
+			Метод получает начальную и конечные даты и id оператора и возвращает время в линии
+		*/
+		public function get_time_in_line($start_day, $end_day, $oper_id){
+			$selected_start_day = $this->change_date($start_day);
+			$selected_end_day = $this->change_date($end_day);
+
+			if($oper_id < 2000){	//	если оператор работает в нашей системе
+				//	POST ссылка на "Входящие" для авторизации в нашей системе
+				$url6 = "http://localhost/cc-line24/admin.php/calls/in";
+				$url7 = "http://localhost/cc-line24/admin.php/reports/agents?date_filter%5Bstart%5D=$selected_start_day&date_filter%5Bend%5D=$selected_end_day&agent=$oper_id&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+
+				$ch = curl_init ($url6);
+				$path1 = dirname(__FILE__). '/data/cookie.txt';
+				curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+				curl_setopt($ch, CURLOPT_URL,$url6);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+				curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=admin&password=OGMzMTQ2OD");
+				curl_exec($ch);
+
+				curl_setopt($ch, CURLOPT_URL,$url7);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+				$result3 = curl_exec($ch);
+			} else {	//	если оператора работает в системе Комусов
+				switch($oper_id){
+					case 2001:$tmp_oper = 260;break;
+					case 2002:$tmp_oper = 253;break;
+					case 2003:$tmp_oper = 335;break;
+					case 2004:$tmp_oper = 281;break;
+					case 2005:$tmp_oper = 306;break;
+					case 2006:$tmp_oper = 302;break;
+					case 2007:$tmp_oper = 312;break;
+					case 2008:$tmp_oper = 270;break;
+					case 2009:$tmp_oper = 284;break;
+					case 2010:$tmp_oper = 327;break;
+					case 2011:$tmp_oper = 276;break;
+					case 2012:$tmp_oper = 316;break;
+					case 2013:$tmp_oper = 262;break;
+					case 2014:$tmp_oper = 283;break;
+					case 2015:$tmp_oper = 251;break;
+					case 2016:$tmp_oper = 252;break;
+					case 2017:$tmp_oper = 282;break;
+					case 2018:$tmp_oper = 295;break;
+					case 2019:$tmp_oper = 296;break;
+					case 2020:$tmp_oper = 303;break;
+					case 2021:$tmp_oper = 330;break;
+					case 2022:$tmp_oper = 254;break;
+					case 2023:$tmp_oper = 308;break;
+					case 2024:$tmp_oper = 318;break;
+					case 2025:$tmp_oper = 255;break;
+					case 2026:$tmp_oper = 271;break;
+					case 2027:$tmp_oper = 315;break;
+					case 2028:$tmp_oper = 311;break;
+					case 2029:$tmp_oper = 285;break;
+					case 2030:$tmp_oper = 307;break;
+					case 2031:$tmp_oper = 287;break;
+					case 2032:$tmp_oper = 323;break;
+					case 2033:$tmp_oper = 288;break;
+					case 2034:$tmp_oper = 320;break;
+					case 2035:$tmp_oper = 277;break;
+					case 2036:$tmp_oper = 289;break;
+					case 2037:$tmp_oper = 272;break;
+					case 2038:$tmp_oper = 298;break;
+					case 2039:$tmp_oper = 286;break;
+					case 2040:$tmp_oper = 317;break;
+					case 2041:$tmp_oper = 304;break;
+					case 2042:$tmp_oper = 273;break;
+					case 2043:$tmp_oper = 329;break;
+					case 2044:$tmp_oper = 301;break;
+					case 2045:$tmp_oper = 268;break;
+					case 2046:$tmp_oper = 257;break;
+					case 2047:$tmp_oper = 305;break;
+					case 2048:$tmp_oper = 326;break;
+					case 2049:$tmp_oper = 258;break;
+					case 2050:$tmp_oper = 337;break;
+					case 2051:$tmp_oper = 290;break;
+					case 2052:$tmp_oper = 278;break;
+					case 2053:$tmp_oper = 275;break;
+					case 2054:$tmp_oper = 319;break;
+					case 2055:$tmp_oper = 321;break;
+					case 2056:$tmp_oper = 313;break;
+					case 2057:$tmp_oper = 328;break;
+					case 2058:$tmp_oper = 310;break;
+					case 2059:$tmp_oper = 259;break;
+					case 2060:$tmp_oper = 294;break;
+					case 2061:$tmp_oper = 274;break;
+					case 2062:$tmp_oper = 314;break;
+					case 2063:$tmp_oper = 325;break;
+					case 2064:$tmp_oper = 322;break;
+					case 2065:$tmp_oper = 297;break;
+					case 2066:$tmp_oper = 269;break;
+					case 2067:$tmp_oper = 280;break;
+					case 2068:$tmp_oper = 309;break;
+					case 2069:$tmp_oper = 279;break;
+					case 2070:$tmp_oper = 324;break;
+					case 2071:$tmp_oper = 336;break;
+					case 2072:$tmp_oper = 256;break;
+				}
+
+				//	POST ссылка на "Входящие" для авторизации в системе Комусов
+				$url6 = "https://outsource.ln24.ru/cc-line24/reports.php/calls/in";
+				$url7 = "https://outsource.ln24.ru/cc-line24/reports.php/reports/agents?date_filter%5Bstart%5D=$selected_start_day&date_filter%5Bend%5D=$selected_end_day&agent=$tmp_oper&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+
+				$ch = curl_init ($url6);
+				$path1 = dirname(__FILE__). '/data/cookie.txt';
+				curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+				curl_setopt($ch, CURLOPT_URL,$url6);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+				curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=WT_super&password=EWn8dDtc");
+				curl_exec($ch);
+
+				curl_setopt($ch, CURLOPT_URL,$url7);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+				$result3 = curl_exec($ch);
+			}
+			$array_csv = $this->from_csv_to_array($result3);
+
+			/*
+				Структура csv файла
+				[0] =>	Дата
+				[1] =>	Вход
+				[2] =>	Выход
+				[3] =>	"В системе"
+				[4] =>	"Разговор (вход.): Время"
+				[5] =>	"Разговор (вход.): %"
+				[6] =>	"Обработка: Время"
+				[7] =>	"Обработка: %"
+				[8] =>	"Пауза: Время"
+				[9] =>	"Пауза: %"
+				[10] =>	"Простой: Время"
+				[11] =>	"Простой: %"
+			*/
+
+			$array_time_in_line = array();
+
+			foreach($array_csv as $key => $value){
+				if($key == 0 OR $value[3] == '') continue;		//	пропускаем шапку
+				$tmp_date = $this->correct_date_in_line($value[0]);
+				$array_time_in_line[$tmp_date] = $value[3];
+			}
+
+			$this->selected_time_in_line = $array_time_in_line;
+		}
+
+		/*
+			Метод принимает дату в формате "03.12.19 (Втр)" и возвращает дату в формате "03.12.19"
+		*/
+		public function correct_date_in_line($date){
+			$date = trim($date, '\"');
+			$tmp_date = explode(' ', $date);
+			return $tmp_date[0];
+		}
+
+		/*
+			Метод принимает дату в формате 03.12.19 и возвращает в формате 2019-12-03
+		*/
+		public function correct_date_in_short($date){
+			$tmp_date = explode('.', $date);
+			$tmp1 = date('Y', time());
+			return $tmp1[0].$tmp1[1].$tmp_date[2].'-'.$tmp_date[1].'-'.$tmp_date[0];
+		}
+
+		/*
+			Метод заполняет массив $array_project , где $key = project_id => $value = project_name
+		*/
+		public function get_array_project(){
+			$this->array_project = $this->array_to_report;
+
+			//	если раскомментировать нижние строки и закомментировать строку выше то будут взяты все очереди
+
+/*			$mysqli = new mysqli(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME);
+			if ($mysqli->connect_errno) {
+				printf("Не удалось подключиться: %s\n", $mysqli->connect_error);
+				exit();
+			}
+			$mysqli->query("SET NAMES utf8;");
+			$sql = "
+				SELECT id, name
+				FROM  `queues`
+				WHERE hidden = 0 AND name LIKE '%(К)%'
+				";
+			$result = $mysqli->query($sql);
+			$array_queues = array();
+			if ($result->num_rows > 0) {
+				while($row = $result->fetch_assoc()) {
+				$array_queues[$row["id"]] = $row["name"];
+				}
+			}
+			$this->array_project = $array_queues;
+
+			$mysqli->close();*/
+		}
+
+		/*
+			Метод принимает строку *.csv файла и возвращает массив
+
+			Структура csv файла
+			[0] =>	#
+			[1] =>	Дата
+			[2] =>	Время
+			[3] =>	Вх.Номер
+			[4] =>	Очередь
+			[5] =>	Оператор
+			[6] =>	Телефон
+			[7] =>	Ожидание
+			[8] =>	Разговор
+			[9] =>	Завершил
+			[10] =>	Обработка
+			[11] =>	Запись
+			[12] =>	Обр.вызов
+		*/
+		public function from_csv_to_array($csv){
+			$array_csv = array();
+			$index_str = 0;
+			$tmp_str = '';
+			for($i = 0; $i < strlen($csv); $i++){
+				if(ord($csv[$i]) == 10){	//	если есть перенос строки
+					$tmp_str1 = explode(";", $tmp_str);
+					$array_csv[$index_str] = $tmp_str1;
+					$index_str ++;
+					$tmp_str = '';
+				} else {	//	если переноса нет, то формируем текущую строку
+					$tmp_str .= $csv[$i];
+				}
+			}
+
+			return $array_csv;
+		}
+
+		/*
+			Метод принимает id очереди, дату и заполняет поле $array_csv
+		*/
+		public function get_array_csv($queue_id, $date){
+			$this->selected_queue = $queue_id;
+			$this->selected_day = $date;
+
+			// POST ссылка на "Отчеты" для авторизации
+			$url1 = "http://localhost/cc-line24/admin.php/reports/cc";
+			//	POST ссылка на "Входящие" для авторизации
+			$url6 = "http://localhost/cc-line24/admin.php/calls/in";
+
+			if($this->selected_UTC == $this->current_UTC){	//	без разницы в час
+				$tmp_date_start = $this->change_date($date);						//	дата без разницы в час
+				$tmp_date_end = $tmp_date_start;									//	дата без разницы в час
+				$url7 = "http://localhost/cc-line24/admin.php/calls/in?date%5Bstart%5D=$tmp_date_start+00%3A00&date%5Bend%5D=$tmp_date_end+23%3A59&directid%5B0%5D=&queue%5B0%5D=$queue_id&agent%5B0%5D=&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=75777d4a6adbd3b480ed20483840ed30&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+			} else {	//	с разницей в час
+				$tmp_date_start = $this->change_date($this->previous_day($date)).'+23%3A00';		//	дата с разницей в час
+				$tmp_date_end = $this->change_date($date).'+22%3A59';							//	дата с разницей в час
+				$url7 = "http://localhost/cc-line24/admin.php/calls/in?date%5Bstart%5D=$tmp_date_start&date%5Bend%5D=$tmp_date_end&directid%5B0%5D=&queue%5B0%5D=$queue_id&agent%5B0%5D=&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=75777d4a6adbd3b480ed20483840ed30&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+			}
+
+			$ch = curl_init ($url1);
+			$path1 = dirname(__FILE__). '/data/cookie.txt';
+			curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+			curl_setopt($ch, CURLOPT_URL,$url1);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+			curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=admin&password=OGMzMTQ2OD");
+			curl_exec($ch);
+
+			curl_setopt($ch, CURLOPT_URL,$url7);
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+			$result3 = curl_exec($ch);
+
+			$this->array_csv = $this->from_csv_to_array($result3);
+
+			/*
+				Структура csv файла
+				[0] =>	#
+				[1] =>	Дата
+				[2] =>	Время
+				[3] =>	Вх.Номер
+				[4] =>	Очередь
+				[5] =>	Оператор
+				[6] =>	Телефон
+				[7] =>	Ожидание
+				[8] =>	Разговор
+				[9] =>	Завершил
+				[10] =>	Обработка
+				[11] =>	Запись
+				[12] =>	Обр.вызов
+			*/
+		}
+
+		/*
+			Метод преобразует дату в нужный формат принимает в формате 2019-12-08 и возвращает в формате 08.12.2019
+		*/
+		public function change_date($date_source){
+			$year = substr($date_source, 0, 4);
+			$month = substr($date_source, 5, 2);
+			$day = substr($date_source, 8, 2);
+			return $day.".".$month.".".$year;
+		}
+
+		/*
+			Метод получает дату и возвращает +1 день
+		*/
+		public function next_day($day){
+			$tmp = explode("-", $day);
+			$tmp_day = mktime(0, 0, 0, $tmp[1], $tmp[2], $tmp[0]);
+			$next_day = $tmp_day + 86400;
+			$next_day1 = getdate($next_day);
+			if((int)$next_day1['mon'] < 10) $next_day1['mon'] = "0".$next_day1['mon'];
+			if((int)$next_day1['mday'] < 10) $next_day1['mday'] = "0".$next_day1['mday'];
+			
+			return $next_day1['year']."-".$next_day1['mon']."-".$next_day1['mday'];
+		}
+
+		/*
+			Метод получает дату и возвращает -1 день
+		*/
+		public function previous_day($day){
+			$tmp = explode("-", $day);
+			$tmp_day = mktime(0, 0, 0, $tmp[1], $tmp[2], $tmp[0]);
+			$next_day = $tmp_day - 86400;
+			$next_day1 = getdate($next_day);
+			if((int)$next_day1['mon'] < 10) $next_day1['mon'] = "0".$next_day1['mon'];
+			if((int)$next_day1['mday'] < 10) $next_day1['mday'] = "0".$next_day1['mday'];
+			
+			return $next_day1['year']."-".$next_day1['mon']."-".$next_day1['mday'];
+		}
+
+		/*
+			Метод принимает строку вида 1:03:23 и возвращает количество секунд
+		*/
+		public function from_str_to_sec($string){
+			$array = array(0 => '', 1 => '', 2 => '');
+			$j = 0;
+			$str = $string;
+			$str .= ':';
+			for($i = 0; $i < strlen($string); $i++){
+			if(":" == $string[$i]){
+				$j++;
+				continue;
+			}
+			$array[$j] .= $string[$i];
+			}
+
+			$l = (int)$array[0] * 3600 + (int)$array[1] * 60 + (int)$array[2];
+			return $l;
+		}
+
+		/*
+			Метод принимает количество секунд и возвращает строку в формате 01:02:03
+		*/
+		public function from_sec_to_str($sec){
+			$tmp1 = intval($sec / 3600);
+			$tmp2 = intval(($sec - $tmp1 * 3600 ) / 60);
+			$tmp3 = intval($sec - ($tmp1 * 3600 + $tmp2 * 60));
+
+			if((int)$tmp1 < 10) $tmp1 = "0".$tmp1;
+			if((int)$tmp2 < 10) $tmp2 = "0".$tmp2;
+			if((int)$tmp3 < 10) $tmp3 = "0".$tmp3;
+						
+			$time = $tmp1.":".$tmp2.":".$tmp3;
+		
+			return $time;
+		}
+
+		/*
+			Метод принимает csv файл и формирует отчет
+		*/
+		public function get_report($array_csv){
+			$report = array(
+				'sum' => 0,												//	C
+				'accept' => 0,											//	D
+				'lost' => 0,											//	E
+				'percent_lost' => 0,									//	F
+				'redirect' => 0,										//	G
+				'outter' => 0,											//	H
+				'accepted in 20 sec' => 0,								//	I
+				'percent accepted in 20 sec' =>	0,						//	J
+				'percent accepted' => 0,								//	K
+				'conversation time' => '0:00:00',						//	L
+				'postcall time' => '0:00:00',							//	M
+				'average conversation time' => '0:00:00',				//	N
+				'average response speed' => '0:00:00'					//	O
+//				'max delay' => 0										//	P (максимальное значение по столбцу ожидание)
+			);
+
+			$conversation_time_sum = 0;
+			$postcall_time_sum = 0;
+			$average_response_speed = 0;
+			$max_delay = 0;
+			
+			foreach($array_csv as $key => $value){
+				if($key != 0){
+					$report['sum']++;
+					if($value[8] != ''){
+						if($this->from_str_to_sec($value[7]) < 21){
+							$report['accepted in 20 sec']++;
+						}
+						$report['accept']++;
+						$conversation_time_sum += $this->from_str_to_sec($value[8]);
+						$postcall_time_sum += $this->from_str_to_sec($value[10]);
+						$average_response_speed += $this->from_str_to_sec($value[7]);
+						//	если очередь Седрус то считаем макс задержку
+						if(in_array($this->selected_queue, array_flip($this->array_max_delay))){
+							if($this->from_str_to_sec($value[7]) > $max_delay) $max_delay = $this->from_str_to_sec($value[7]);
+						}
+					} else {
+						$report['lost']++;
+						if(in_array($this->selected_queue, $this->array_losted)){
+							if($this->array_losted_sec[$this->selected_queue] >= $this->from_str_to_sec($value[7])){
+								$report['sum']--;
+								$report['lost']--;
+								$report['accepted in 20 sec']--;
+							}
+						}
+					}
+				}
+			}
+			if($report['sum'] == 0){
+				$report['percent_lost'] = "0%";
+			} else {
+				$report['percent_lost'] = round($report['lost'] / $report['sum'] * 100, 1)."%";
+			}
+			if($report['sum'] == 0){
+				$report['percent accepted in 20 sec'] = "0%";
+			} else {
+				$report['percent accepted in 20 sec'] = round($report['accepted in 20 sec'] / $report['sum'] * 100, 0)."%";
+			}
+			if($report['sum'] == 0){
+				$report['percent accepted'] = "0%";
+			} else {
+				$report['percent accepted'] = round($report['accept'] / $report['sum'] * 100, 0)."%";
+			}
+			$report['conversation time'] = $this->from_sec_to_str($conversation_time_sum);
+			if($report['accept'] == 0){
+				$report['postcall time'] = "0:00:00";
+			} else {
+				$report['postcall time'] = $this->from_sec_to_str(round($postcall_time_sum / $report['accept'], 0) * $report['accept']);
+			}
+			if($report['accept'] == 0){
+				$report['average conversation time'] = "0:00:00";
+			} else {
+				$report['average conversation time'] = $this->from_sec_to_str($this->from_str_to_sec($report['conversation time']) / $report['accept']);
+			}
+			if($report['accept'] == 0){
+				$report['average response speed'] = "0:00:00";
+			} else {
+				$report['average response speed'] = $this->from_sec_to_str($average_response_speed / $report['accept']);
+			}
+			if(in_array($this->selected_queue, array_flip($this->array_max_delay))){
+				$report['max_delay'] = $this->from_sec_to_str($max_delay);
+			}
+							
+			//	вытаскиваем из БД redirect
+			if($this->selected_UTC == $this->current_UTC){
+				$tmp_day_start = $this->selected_day." 00:00:00";
+				$tmp_day_end = $this->selected_day." 23:59:59";
+			} else {
+				$tmp_day_start = $this->previous_day($this->selected_day)." 23:00:00";
+				$tmp_day_end = $this->selected_day." 22:59:59";
+			}
+
+			if(in_array($this->selected_queue, array_flip($this->array_redirected))){
+				$dst = $this->array_redirected[$this->selected_queue];
+
+				$mysqli = new mysqli(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME2);
+				if ($mysqli->connect_errno) {
+					printf("Не удалось подключиться: %s\n", $mysqli->connect_error);
+					exit();
+				}
+				$mysqli->query("SET NAMES utf8;");
+				$sql = "
+					SELECT COUNT(*) AS redirect
+					FROM  `cdr`
+					WHERE (`calldate` BETWEEN '$tmp_day_start' AND '$tmp_day_end')
+					AND `dst` = $dst
+					";
+				$result = $mysqli->query($sql);
+				if ($result->num_rows > 0) {
+					while($row = $result->fetch_assoc()) {
+						$report['redirect'] = $row['redirect'];
+					}
+				}
+				$mysqli->close();
+			}
+
+			//	вытаскиваем из БД outter 
+			$mysqli = new mysqli(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME);
+
+			if ($mysqli->connect_errno) {
+				printf("Не удалось подключиться: %s\n", $mysqli->connect_error);
+				exit();
+			}
+			$sql = "
+				SELECT COUNT(id) AS outter
+				FROM `cdr_agents`
+				WHERE (`calldate` BETWEEN '$tmp_day_start' AND '$tmp_day_end')
+				AND `queue_id` = ".$this->selected_queue."
+				AND dialstatus = 'XFER'
+			";
+			$result = $mysqli->query($sql);
+			$row = $result->fetch_assoc();
+			$report['outter'] = $row['outter'];
+			
+			$mysqli->close();
+
+			$this->report = $report;
+		}
+		
+		/*
+			Метод принимает начальную и конечную даты и возвращает массив дней где, $key = date (2019-12-05) => $value = timestamp
+		*/
+		public function get_array_days($start_day, $end_day){
+			$array_days = array();
+			for($i = $start_day; $i != $this->next_day($end_day); $i = $this->next_day($i)){
+				$tmp = explode("-", $i);
+				$tmp_day = mktime(0, 0, 0, $tmp[1], $tmp[2], $tmp[0]);
+				$array_days[$i] = $tmp_day;
+			}
+			return $array_days;
+		}
+
+		public function __construct(){
+			$this->get_array_project();
+		}
+	}
+?>

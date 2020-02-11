@@ -1,0 +1,596 @@
+<?php
+/*	===!!! template for debug !!!===
+
+	echo '<pre>';
+		var_dump($result3);
+	echo '</pre>';
+
+	===!!! template for debug !!!===	*/
+
+	include('line24_oper.class');
+
+	class line24_project extends line24_oper
+	{
+		public $array_project = array();							//	поле содержит все проекты , где $key = project_id => $value = project_name
+		public $selected_project;									//	поле содержит id выбранного проекта
+		public $array_csv = array();								//	массив csv файла
+		public $oper_array = array();								//	массив работы проектов с операторами
+
+		/*
+			Метод заполняет массив $array_project , где $key = project_id => $value = project_name
+		*/
+		public function get_array_project(){
+			$mysqli = new mysqli(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME);
+			if ($mysqli->connect_errno) {
+				printf("Не удалось подключиться: %s\n", $mysqli->connect_error);
+				exit();
+			}
+			$mysqli->query("SET NAMES utf8;");
+			$sql = "
+				SELECT id, name
+				FROM  `queues`
+				";
+			$result = $mysqli->query($sql);
+			$array_queues = array();
+			if ($result->num_rows > 0) {
+				while($row = $result->fetch_assoc()) {
+				$array_queues[$row["id"]] = $row["name"];
+				}
+			}
+			$array_queues[1001] = 'Магнит (Комус)';
+			asort($array_queues);
+			$this->array_project = $array_queues;
+
+			$mysqli->close();
+		}
+
+		/*
+			Метод получает дату и проект и заполняет поле $array_csv (содержит массив записей по дате и проекту)
+		*/
+		public function get_selected_csv_project($date_start, $date_end, $project_id){
+			$selected_start_date = $this->change_date($date_start);
+			$selected_end_date = $this->change_date($date_end);
+			$this->selected_project = $project_id;
+
+			//	id Магнита = 519 но в нашей системе будет 1001
+			
+			if($project_id != 1001){	//	если проект не Магнит от Комусов
+				//	POST ссылка на "Входящие" для авторизации наш Line24
+				$url6 = "http://localhost/cc-line24/admin.php/calls/in";
+				$url7 = "http://localhost/cc-line24/admin.php/calls/in?date%5Bstart%5D=$selected_start_date+00%3A00&date%5Bend%5D=$selected_end_date+23%3A59&directid%5B0%5D=&queue%5B0%5D=$project_id&agent%5B0%5D=&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+
+				$ch = curl_init ($url6);
+				$path1 = dirname(__FILE__). '/data/cookie.txt';
+				curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+				curl_setopt($ch, CURLOPT_URL,$url6);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+				curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=admin&password=OGMzMTQ2OD");
+				curl_exec($ch);
+
+				curl_setopt($ch, CURLOPT_URL,$url7);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+				$result3 = curl_exec($ch);
+			} else {	//	если проект Магнит от Комусов
+				//	POST ссылка на "Входящие" для авторизации Line24 Комуса
+				$url6 = "https://outsource.ln24.ru/cc-line24/reports.php/calls/in";
+	//			$url7 = "http://localhost/cc-line24/admin.php/calls/in?date%5Bstart%5D=$selected_start_date+00%3A00&date%5Bend%5D=$selected_end_date+23%3A59&directid%5B0%5D=&queue%5B0%5D=519&agent%5B0%5D=&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+				$url7 = "https://outsource.ln24.ru/cc-line24/reports.php/calls/in?date%5Bstart%5D=$selected_start_date+00%3A00&date%5Bend%5D=$selected_end_date+23%3A59&queue%5B0%5D=519&agent%5B0%5D=&callerid=&callstatus=&uniqueid=&paginator%5Bprev_request_hash%5D=b8acdbceec9d81fdbc2d25d4cb0d906c&paginator%5Bpage%5D=1&sort%5Bby%5D=date&sort%5Bdir%5D=asc&export=1";
+				
+				$ch = curl_init ($url6);
+				$path1 = dirname(__FILE__). '/data/cookie.txt';
+				curl_setopt($ch, CURLOPT_COOKIEJAR, $path1); // сохранять куки в файл 
+				curl_setopt($ch, CURLOPT_URL,$url6);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+				curl_setopt($ch, CURLOPT_POSTFIELDS,"action=login&username=WT_super&password=EWn8dDtc");
+				curl_exec($ch);
+
+				curl_setopt($ch, CURLOPT_URL,$url7);
+				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+				$result3 = curl_exec($ch);
+			}
+//			$result3 .= $result1;
+
+/*			echo '<pre>';
+				var_dump($result3);
+			echo '</pre>';*/
+			/*
+			$array_magnit = $this->from_csv_to_array($result1);
+			$array_csv = $this->from_csv_to_array($result3);*/
+
+/*
+********************************************************************
+********************************************************************
+********************************************************************
+********************************************************************
+*/
+			
+			$this->array_csv = $this->from_csv_to_array($result3);
+
+			/*
+				Структура csv файла
+				[0] =>	#
+				[1] =>	Дата
+				[2] =>	Время
+				[3] =>	Вх.Номер
+				[4] =>	Очередь
+				[5] =>	Оператор
+				[6] =>	Телефон
+				[7] =>	Ожидание
+				[8] =>	Разговор
+				[9] =>	Завершил
+				[10] =>	Обработка
+				[11] =>	Запись
+				[12] =>	Обр.вызов
+			*/
+		}
+
+		/*
+			Метод принимает массив csv и формирует массив $oper_array где:
+			$key = day	=>	$value = array(
+											oper_name => array(
+												'start_time' =>	время первого звонка на проекте
+												'end_time' => время последнего звонка на проекте
+												'duration_time' => время в разговоре
+												'time_in_line' => время в линии
+												'call_count' => количество звонков
+											);
+											'total_start_time' => время самого первого звонка за день
+											'total_end_time' => время самого последнего звонка за день
+											'total_duration_time' => общее время в разговоре за день
+											'total_time_in_line' => общее время в линии за день
+											'total_call_count' => общее количество звонков за день
+							);
+		*/
+		public function get_oper_array($array_csv){
+			$oper_array = array();
+			$this->get_opers();
+			$total_time_in_line = '0:00:00';
+			
+			//	проверяем какой проект выбираем
+			if($this->selected_project == 1001){	//	если Магнит от Комусов
+				$index_oper = 4;	//	индекс оператора для системы Комусов
+				$index_talk = 7;	//	индекс времени в разговоре для системы Комусов
+			} else {	//	если наша система
+				$index_oper = 5;	//	индекс оператора для нашей системы
+				$index_talk = 8;	//	индекс времени в разговоре для нашей системы
+			}
+			
+			
+
+/*			echo '<pre>';
+				var_dump($array_csv);
+			echo '</pre>';*/
+
+			foreach($array_csv as $key => $value){
+				if($key == 0) continue;		//	пропускаем шапку
+				if(isset($oper_array[$value[1]][$value[$index_oper]])){	//	если существует такой оператор то обновляем информацию по нему
+					if($this->from_str_to_sec($oper_array[$value[1]][$value[$index_oper]]['end_time']) < $this->from_str_to_sec($value[2])){	//	если новое время разговора больше чем предыдущее то записываем новое
+						$oper_array[$value[1]][$value[$index_oper]]['end_time'] = $value[2];
+					}
+					$oper_array[$value[1]][$value[$index_oper]]['duration_time'] = $this->from_sec_to_str($this->from_str_to_sec($oper_array[$value[1]][$value[$index_oper]]['duration_time']) + $this->from_str_to_sec($value[$index_talk]));
+					$oper_array[$value[1]][$value[$index_oper]]['duration_time_ceil'] += ceil($this->from_str_to_sec($value[$index_talk]) / 60);
+					$oper_array[$value[1]][$value[$index_oper]]['call_count']++;
+//					$oper_array[$value[1]][$value[$index_oper]]['time_in_line'] = $this->from_sec_to_str($this->from_str_to_sec($oper_array[$value[1]][$value[$index_oper]]['end_time']) - $this->from_str_to_sec($oper_array[$value[1]][$value[$index_oper]]['start_time']));
+				} else {	//	если такого оператора нет то заполняем первыми данными
+					if($value[$index_oper] != 'Нет'){	//	если имя оператора не равно Нет то есть недозвон то считаем время рабоыт в линии
+						$tmp_date = $this->correct_date_in_short($value[1])."<BR>";
+
+						$tmp_array = array_flip($this->array_oper);
+
+						$this->get_time_in_line($tmp_date, $tmp_date, $tmp_array[trim($value[$index_oper], '\"')]);
+					} else {	//	если это недозвон и ФИО оператора = "Нет"
+						$this->selected_time_in_line[$value[1]] = '0:00:00';
+					}
+					
+//					echo $value[1]."<BR>";
+
+					
+					if(isset($oper_array[$value[1]]['total_time_in_line'])) $oper_array[$value[1]]['total_time_in_line'] = $this->from_sec_to_str($this->from_str_to_sec($oper_array[$value[1]]['total_time_in_line']) + $this->from_str_to_sec($this->selected_time_in_line[$value[1]]));
+
+					$oper_array[$value[1]][$value[$index_oper]]['start_time'] = $value[2];
+					$oper_array[$value[1]][$value[$index_oper]]['end_time'] = $value[2];
+					$oper_array[$value[1]][$value[$index_oper]]['duration_time'] = $value[$index_talk];
+					$oper_array[$value[1]][$value[$index_oper]]['duration_time_ceil'] = ceil($this->from_str_to_sec($value[$index_talk]) / 60);
+					$oper_array[$value[1]][$value[$index_oper]]['time_in_line'] = $this->selected_time_in_line[$value[1]];
+					$oper_array[$value[1]][$value[$index_oper]]['call_count'] = 1;
+					
+					
+				}
+				if(isset($oper_array[$value[1]]['total_duration_time'])){	//	если уже есть инфа за весь день то заполняем
+					$oper_array[$value[1]]['total_duration_time'] = $this->from_sec_to_str($this->from_str_to_sec($value[$index_talk]) + $this->from_str_to_sec($oper_array[$value[1]]['total_duration_time']));
+					$oper_array[$value[1]]['total_duration_time_ceil'] += ceil($this->from_str_to_sec($value[$index_talk]) / 60);
+					if($this->from_str_to_sec($oper_array[$value[1]]['total_end_time']) < $this->from_str_to_sec($oper_array[$value[1]][$value[$index_oper]]['end_time'])){
+						$oper_array[$value[1]]['total_end_time'] = $oper_array[$value[1]][$value[$index_oper]]['end_time'];
+					}
+					$oper_array[$value[1]]['total_call_count']++;
+				} else {	//	если нет инфы за весь день то заполняем первыми данными
+					$oper_array[$value[1]]['total_duration_time'] = $value[$index_talk];
+					$oper_array[$value[1]]['total_duration_time_ceil'] = ceil($this->from_str_to_sec($value[$index_talk]) / 60);
+					$oper_array[$value[1]]['total_start_time'] = $value[2];
+					$oper_array[$value[1]]['total_end_time'] = $value[2];
+					$oper_array[$value[1]]['total_time_in_line'] = $this->selected_time_in_line[$value[1]];
+					$oper_array[$value[1]]['total_call_count'] = 1;
+				}
+			}
+			
+/*			echo '<pre>';
+						var_dump($oper_array);
+					echo '</pre>';*/
+			
+			$this->oper_array = $oper_array;
+		}
+
+		/*
+			Метод принимает массив работы проекта с операторами и выводит его в удобной форме
+		*/
+		public function show_project_work($oper_array){
+			$first_day = $_GET['start_day'];
+			$last_day = $_GET['end_day'];
+			if($first_day == $last_day){
+				$period = " $first_day ";
+			} else {
+				$period = " период с $first_day по $last_day ";
+			}
+
+			echo "<HR>";
+			if(!$oper_array){	//	если не было звонков
+				echo "<p class = 'title'>За $period $this->selected_year по проекту: <span style = 'color:red; font-size: 20pt;'>".$this->array_project[$this->selected_project]."</span> не обнаружено звонков</p>";
+			} else {
+				echo "<p class = 'title'>Время работы проекта: <span style = 'color:red; font-size: 20pt;'>".$this->array_project[$this->selected_project]."</span></p>";
+				foreach($oper_array as $key => $value){		//	$key = дата
+					echo "<div id = 'title_main1'>";
+					echo "<table class = 'project' border = 1>";
+						echo "<tr>";
+							echo "<td style = 'font-size: 20pt; background-color:DarkSeaGreen;' colspan = '10'>$key</td>";
+						echo "</tr>";
+						echo "<tr>";
+							echo "<td class = 'header_table' style = 'width:10px'>№ п/п</td>";
+							echo "<td class = 'header_table' style = 'width:250px'>ФИО оператора</td>";
+							echo "<td class = 'header_table' style = 'width:120px'>Время первого звонка</td>";
+							echo "<td class = 'header_table' style = 'width:130px'>Время последнего звонка</td>";
+							echo "<td class = 'header_table' style = 'width:150px'>Время в разговоре (без округления)</td>";
+							echo "<td class = 'header_table' style = 'width:140px'>Время в разговоре (с округлением)</td>";
+							echo "<td class = 'header_table' style = 'width:90px'>Время в линии</td>";
+							echo "<td class = 'header_table' style = 'width:90px'>Кол-во минут в час</td>";
+							echo "<td class = 'header_table' style = 'width:50px'>КПД</td>";
+							echo "<td class = 'header_table' style = 'width:70px'>Кол-во звонков</td>";
+						echo "</tr>";
+						$project_number = 0;
+						ksort($value);
+						foreach($value as $key1 => $value1){	//	$key1 = ФИО оператора
+							if($key1 == 'total_duration_time' || $key1 == 'total_start_time' || $key1 == 'total_end_time' || $key1 == 'total_time_in_line' || $key1 == 'total_call_count' || $key1 == 'total_duration_time_ceil') continue;
+							echo "<tr>";
+								$start_time = $value1['start_time'];
+								$end_time = $value1['end_time'];
+								$duration_time = $value1['duration_time'];
+								$duration_time_ceil = $value1['duration_time_ceil'];
+								$time_in_line = $value1['time_in_line'];
+								if($this->from_str_to_sec($time_in_line) == 0){
+									$ratio = 0;
+								} else {
+									$ratio = round($this->from_str_to_sec($duration_time) / $this->from_str_to_sec($time_in_line) * 60, 2);
+								}
+								
+								$kpd = round($ratio / 60 * 100, 0);
+								$call_count = $value1['call_count'];
+								$project_number++;
+								
+								if($ratio < 10){
+									$tmp_color = 'Chocolate';
+								} elseif($ratio < 30) {
+									$tmp_color = 'Aquamarine';
+								} elseif ($ratio < 60) {
+									$tmp_color = 'YellowGreen';
+								} elseif($ratio > 60) {
+									$tmp_color = 'Salmon';
+								} else {
+									$tmp_color = '';
+								}
+								
+								echo "<td>$project_number</td>";
+								echo "<td>$key1</td>";
+								echo "<td>$start_time</td>";
+								echo "<td>$end_time</td>";
+								echo "<td>$duration_time</td>";
+								echo "<td>$duration_time_ceil</td>";
+								echo "<td>$time_in_line</td>";
+								echo "<td style = 'background-color: $tmp_color'>$ratio</td>";
+								echo "<td>$kpd%</td>";
+								echo "<td>$call_count</td>";
+							echo "</tr>";
+						}
+						echo "<tr>";
+							$total_start_time = $value['total_start_time'];
+							$total_end_time = $value['total_end_time'];
+							$total_duration_time = $value['total_duration_time'];
+							$total_duration_time_ceil = $value['total_duration_time_ceil'];
+							$total_time_in_line = $value['total_time_in_line'];
+							if($this->from_str_to_sec($total_time_in_line) == 0){
+								$total_ratio = 0;
+							} else {
+								$total_ratio = round($this->from_str_to_sec($total_duration_time) / $this->from_str_to_sec($total_time_in_line) * 60, 2);
+							}
+							$total_kpd = round($total_ratio / 60 * 100, 0);
+							$total_call_count = $value['total_call_count'];
+
+							echo "<td colspan = '2' class = 'header_table' style = 'text-align:right;'>Итого за день:</td>";
+							echo "<td class = 'header_table'>$total_start_time</td>";
+							echo "<td class = 'header_table'>$total_end_time</td>";
+							echo "<td class = 'header_table'>$total_duration_time</td>";
+							echo "<td class = 'header_table'>$total_duration_time_ceil</td>";
+							echo "<td class = 'header_table'>$total_time_in_line</td>";
+							echo "<td class = 'header_table'>$total_ratio</td>";
+							echo "<td class = 'header_table'>$total_kpd%</td>";
+							echo "<td class = 'header_table'>$total_call_count</td>";
+						echo "</tr>";
+					echo "</table>";
+					echo "</div>";
+				}
+//	Выводим график работы проекта с нагрузкой по часам (по к-ву звонков)
+
+				echo "<HR>";
+				echo "<p class = 'title'>График работы проекта с нагрузкой по часам (к-во звонков)</p>";
+
+				$tmp_array = $this->get_array_by_hours('count', $this->selected_project, 'prj');
+				
+/*				echo '<pre>';
+					var_dump($tmp_array);
+				echo '</pre>';*/
+				
+				$json = json_encode($tmp_array);
+				
+				
+//					include('data/graph.js');
+				foreach($tmp_array as $key => $value){
+					echo "<canvas id='$key'></canvas>";
+				}
+				?>
+					<script>
+						let hours = <?php echo $json;?>;
+						
+						for(var key in hours){
+							var example = document.getElementById(key),
+								ctx     = example.getContext('2d');
+							example.width  = 1280;
+							example.height = 350;
+
+							ctx.beginPath();
+							ctx.fill(); // *14
+							ctx.moveTo(30, 15);
+							ctx.lineTo(30, 310);
+							ctx.lineTo(1230, 310);
+							ctx.stroke();
+						console.log(key);
+							ctx.fillStyle = "#2980b9";
+							ctx.font = "bold 10pt Georgia";
+							ctx.fillText("К-во звонков в час за - ", 1, 10);
+							ctx.fillText(key, 165, 10);
+							ctx.fillText("Часы", 1235, 315);
+							for(var x = 0; x < 24; x++){
+								var text = x;
+								ctx.fillText(text, 30 + x * 50, 320);
+								ctx.strokeRect(35 + x * 50, 310, 45, -hours[key][x] * 1);
+								ctx.fillText(hours[key][x], 40 + x * 50, 310 - hours[key][x] * 1 - 5);
+							}
+						}
+					</script>
+				<?php
+			}
+		}
+
+		/*
+			Метод принимает массив работы проекта с операторами и выводит его в удобной форме за месяц
+		*/
+		public function show_project_work_month($project_array){
+			$total_start_time_month = '23:59:59';
+			$total_end_time_month = '0:00:00';
+			$total_duration_time_month = 0;
+			$total_duration_time_ceil_month = 0;
+			$total_time_in_line_month = 0;
+			$total_call_count_month = 0;
+
+			$selected_month = $this->array_month[$this->selected_month];
+
+			if(!$project_array){	//	если не было звонков
+				echo "<p class = 'title'>За $selected_month $this->selected_year по проекту: <span style = 'color:red; font-size: 20pt;'>".$this->array_project[$this->selected_project]."</span> не обнаружено звонков</p>";
+			} else {
+				echo "<HR>";
+				echo "<p class = 'title'>Время работы проекта: <span style = 'color:red; font-size: 20pt;'>".$this->array_project[$this->selected_project]."</span> за $selected_month $this->selected_year</p>";
+				echo "<div id = 'title_main1'>";
+				echo "<table class = 'project' border = 1>";
+					echo "<tr>";
+						echo "<td class = 'header_table' style = 'width:120px'>День</td>";
+						echo "<td class = 'header_table' style = 'width:120px'>Время первого звонка</td>";
+						echo "<td class = 'header_table' style = 'width:130px'>Время последнего звонка</td>";
+						echo "<td class = 'header_table' style = 'width:150px'>Время в разговоре (без округления)</td>";
+						echo "<td class = 'header_table' style = 'width:140px'>Время в разговоре (с округлением)</td>";
+						echo "<td class = 'header_table' style = 'width:90px'>Время в линии</td>";
+						echo "<td class = 'header_table' style = 'width:90px'>Кол-во минут в час</td>";
+						echo "<td class = 'header_table' style = 'width:50px'>КПД</td>";
+						echo "<td class = 'header_table' style = 'width:70px'>Кол-во звонков</td>";
+						echo "<td class = 'header_table' style = 'width:110px'>Подробный отчет за день</td>";
+					echo "</tr>";
+				foreach($project_array as $key => $value){		//	$key = дата
+					$project_number = 0;
+					foreach($value as $key1 => $value1){	//	$key1 = название оператора
+						if($key1 == 'total_duration_time' || $key1 == 'total_start_time' || $key1 == 'total_end_time' || $key1 == 'total_time_in_line' || $key1 == 'total_call_count' || $key1 == 'duration_time_ceil') continue;
+						$start_time = $value1['start_time'];
+						$end_time = $value1['end_time'];
+						$duration_time = $value1['duration_time'];
+						$duration_time_ceil = $value1['duration_time_ceil'];
+						$time_in_line = $value1['time_in_line'];
+						if($this->from_str_to_sec($time_in_line) == 0){
+							$ratio = 0;
+						} else {
+							$ratio = round($this->from_str_to_sec($duration_time) / $this->from_str_to_sec($time_in_line) * 60, 2);
+						}
+						$call_count = $value1['call_count'];
+						$project_number++;
+					}
+					echo "<tr>";
+						$total_start_time = $value['total_start_time'];
+						$total_end_time = $value['total_end_time'];
+						$total_duration_time = $value['total_duration_time'];
+						$total_duration_time_ceil = $value['total_duration_time_ceil'];
+						$total_time_in_line = $value['total_time_in_line'];
+						if($this->from_str_to_sec($total_time_in_line) == 0){
+							$total_ratio = 0;
+						} else {
+							$total_ratio = round($this->from_str_to_sec($total_duration_time) / $this->from_str_to_sec($total_time_in_line) * 60, 2);
+						}
+						$total_kpd = round($total_ratio / 60 * 100, 0);
+						$total_call_count = $value['total_call_count'];
+
+						if($this->from_str_to_sec($total_start_time_month) > $this->from_str_to_sec($total_start_time)) $total_start_time_month = $total_start_time;
+						if($this->from_str_to_sec($total_end_time_month) < $this->from_str_to_sec($total_end_time)) $total_end_time_month = $total_end_time;
+						$total_duration_time_month += $this->from_str_to_sec($total_duration_time);
+						$total_duration_time_ceil_month += $total_duration_time_ceil;
+						$total_time_in_line_month += $this->from_str_to_sec($total_time_in_line);
+						$total_call_count_month += $total_call_count;
+
+						if($total_ratio < 10){
+							$tmp_color = 'Chocolate';
+						} elseif($total_ratio < 30) {
+							$tmp_color = 'Aquamarine';
+						} elseif ($total_ratio < 60) {
+							$tmp_color = 'YellowGreen';
+						} elseif($total_ratio > 60) {
+							$tmp_color = 'Salmon';
+						} else {
+							$tmp_color = '';
+						}
+
+						echo "<td>$key</td>";
+						echo "<td>$total_start_time</td>";
+						echo "<td>$total_end_time</td>";
+						echo "<td>$total_duration_time</td>";
+						echo "<td>$total_duration_time_ceil</td>";
+						echo "<td>$total_time_in_line</td>";
+						echo "<td style = 'background-color: $tmp_color'>$total_ratio</td>";
+						echo "<td>$total_kpd%</td>";
+						echo "<td>$total_call_count</td>";
+						$tmp_project = $this->selected_project;
+						$tmp_day = $this->correct_date_in_short($key);
+						$tmp_link = "line24_project.php?selected_project=$tmp_project&start_day=$tmp_day&end_day=$tmp_day";
+						echo "<td><a href='$tmp_link' target='_blank'><img src='img/month.png' width='25' height='25' alt='Отчет за месяц'></a></td>";
+					echo "</tr>";
+				}
+				echo "<tr>";
+					$total_duration_time_month = $this->from_sec_to_str($total_duration_time_month);
+					$total_time_in_line_month = $this->from_sec_to_str($total_time_in_line_month);
+
+					if($this->from_str_to_sec($total_time_in_line_month) == 0){
+						$total_ratio_month = 0;
+					} else {
+						$total_ratio_month = round($this->from_str_to_sec($total_duration_time_month) / $this->from_str_to_sec($total_time_in_line_month) * 60, 2);
+					}
+					$total_kpd_month = round($total_ratio_month / 60 * 100, 0);
+
+					echo "<td class = 'header_table' style = 'text-align:right;'>Итого за месяц:</td>";
+					echo "<td class = 'header_table'>$total_start_time_month</td>";
+					echo "<td class = 'header_table'>$total_end_time_month</td>";
+					echo "<td class = 'header_table'>$total_duration_time_month</td>";
+					echo "<td class = 'header_table'>$total_duration_time_ceil_month</td>";
+					echo "<td class = 'header_table'>$total_time_in_line_month</td>";
+					echo "<td class = 'header_table'>$total_ratio_month</td>";
+					echo "<td class = 'header_table'>$total_kpd_month%</td>";
+					echo "<td class = 'header_table'>$total_call_count_month</td>";
+					echo "<td class = 'header_table'>WWW</td>";
+				echo "</tr>";
+				echo "</table>";
+				echo "</div>";
+			}
+			
+//	Выводим список операторов которые работали на проекте
+			echo "<HR>";
+			echo "<p class = 'title'>Список операторов которые работали на проекте</p>";
+			
+			$array_of_oper = array();
+			foreach($project_array as $key => $value){	//	идем по всем записям, где $key = date => $value = array
+				foreach($value as $key1 => $value1){	//	идем по всем операторам пропуская данные
+					if($key1 == 'total_duration_time' || $key1 == 'total_start_time' || $key1 == 'total_end_time' || $key1 == 'total_time_in_line' || $key1 == 'total_call_count' || $key1 == 'duration_time_ceil' || $key1 == 'total_duration_time_ceil') continue;
+					if(!isset($array_of_project[$key1])){	//	если такого проекта еще нет, то записываем первое к-во звонков
+						$array_of_project[$key1] = $value1['call_count'];
+					} else {	//	если проект повторяется, то плюсуем к-во звонков
+						$array_of_project[$key1] += $value1['call_count'];
+					}
+				}
+			}
+			
+			$index = 1;
+			echo "<div id = 'title_main1'>";
+			echo "<table class = 'project' border = 1>";
+				echo "<tr>";
+					echo "<td class = 'header_table' style = 'width:10px'>№ п/п</td>";
+					echo "<td class = 'header_table' style = 'width:250px'>ФИО оператора</td>";
+					echo "<td class = 'header_table' style = 'width:70px'>Кол-во звонков</td>";
+				echo "</tr>";
+			foreach($array_of_project as $key => $value){		//	$key = ФИО оператора => $value = к-во звонков
+				echo "<tr>";
+					echo "<td>$index</td>";
+					echo "<td>$key</td>";
+					echo "<td>$value</td>";
+				echo "</tr>";
+				$index++;
+			}
+			echo "</table>";
+			echo "</div>";
+			
+//	Выводим график работы проекта с нагрузкой по часам (по к-ву звонков)
+
+			echo "<HR>";
+			echo "<p class = 'title'>График работы проекта с нагрузкой по часам (к-во звонков)</p>";
+
+			$tmp_array = $this->get_array_by_hours('count', $this->selected_project, 'prj');
+			
+/*				echo '<pre>';
+				var_dump($tmp_array);
+			echo '</pre>';*/
+			
+			$json = json_encode($tmp_array);
+			
+			
+//					include('data/graph.js');
+			foreach($tmp_array as $key => $value){
+				echo "<canvas id='$key'></canvas>";
+			}
+			?>
+				<script>
+					let hours = <?php echo $json;?>;
+					
+					for(var key in hours){
+						var example = document.getElementById(key),
+							ctx     = example.getContext('2d');
+						example.width  = 1280;
+						example.height = 350;
+
+						ctx.beginPath();
+						ctx.fill(); // *14
+						ctx.moveTo(30, 15);
+						ctx.lineTo(30, 310);
+						ctx.lineTo(1230, 310);
+						ctx.stroke();
+					console.log(key);
+						ctx.fillStyle = "#2980b9";
+						ctx.font = "bold 10pt Georgia";
+						ctx.fillText("К-во звонков в час за - ", 1, 10);
+						ctx.fillText(key, 165, 10);
+						ctx.fillText("Часы", 1235, 315);
+						for(var x = 0; x < 24; x++){
+							var text = x;
+							ctx.fillText(text, 30 + x * 50, 320);
+							ctx.strokeRect(35 + x * 50, 310, 45, -hours[key][x] * 1);
+							ctx.fillText(hours[key][x], 40 + x * 50, 310 - hours[key][x] * 1 - 5);
+						}
+					}
+				</script>
+			<?php
+		}
+
+		public function __construct(){
+			$this->get_array_project();
+		}
+	}
+?>
