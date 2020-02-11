@@ -20,7 +20,7 @@
 		$line_monitor->get_billings(0);
 
 
-//		github
+//		github update
 		$line_monitor->get_billings(1);
 		$line_monitor->show_monitor();
 //		echo "<span class = 'header_tittle'>Домашняя страница. В дальнейшем здесь будет шикарный мониторинг...</span>";
